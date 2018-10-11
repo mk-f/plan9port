@@ -229,6 +229,13 @@ void		textsetselect(Text*, uint, uint);
 void		textshow(Text*, uint, uint, int);
 void		texttype(Text*, Rune);
 
+enum
+{
+	SPACESINDENT	= 0,
+	AUTOINDENT,
+	NINDENT,
+};
+
 struct Window
 {
 	QLock	lk;
@@ -240,7 +247,7 @@ struct Window
 	uchar	isscratch;
 	uchar	filemenu;
 	uchar	dirty;
-	uchar	autoindent;
+	uchar	indent[NINDENT];
 	uchar	showdel;
 	int		id;
 	Range	addr;
