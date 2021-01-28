@@ -71,7 +71,16 @@ textscrdraw(Text *t)
 	if(!eqrect(r2, t->lastsr)){
 		t->lastsr = r2;
 		draw(b, r1, t->fr.cols[BORD], nil, ZP);
-		draw(b, r2, t->fr.cols[BACK], nil, ZP);
+
+		/*
+		 * if scrollbar fills the whole area, "hide" it by
+		 * coloring it like the background
+		 */
+		if (eqrect(r1,r2))
+			draw(b, r2, t->fr.cols[BORD], nil, ZP);
+		else
+			draw(b, r2, tagcols[BORD], nil, ZP);
+
 		r2.min.x = r2.max.x-1;
 		draw(b, r2, t->fr.cols[BORD], nil, ZP);
 		draw(t->fr.b, r, b, nil, Pt(0, r1.min.y));
