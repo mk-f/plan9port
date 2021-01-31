@@ -57,6 +57,7 @@ int	debug;
 int	rcfd;
 int	cook = 1;
 int	password;
+int	extended;
 int	israw(int);
 
 char *name;
@@ -140,6 +141,9 @@ threadmain(int argc, char **argv)
 	ARGBEGIN{
 	case 'd':
 		debug = 1;
+		break;
+	case 'X':
+		extended = 1;
 		break;
 	case 'n':
 		name = EARGF(usage());
@@ -479,6 +483,43 @@ stdinproc(void *v)
 	}
 }
 
+void
+dropCSI(char *p, int n)
+{
+	int i;
+	char *s;
+	enum { start, ESC, CSI } state = start;
+
+	for(i=0; i<n; i++) {
+		switch(state) {
+			case start:
+				if (*p == 0x1b) {
+					s = p;
+					state = ESC;
+				}
+				break;
+			case ESC:
+				if (*p == '[')
+					state = CSI;
+				else
+					state = start;
+				break;
+			case CSI:
+				if ((*p >= 0x40) && (*p <= 0x7e)) {
+					/* squash nul will clean up after us */
+					memset(s, 0, p-s+1);
+					state = start;
+				}
+				else if ((*p >= 0x30) && (*p <= 0x3F))
+					state = CSI;
+				else /* invalid */
+					state = start;
+				break;
+		}
+		p++;
+	}
+}
+
 int
 dropcr(char *p, int n)
 {
@@ -550,6 +591,9 @@ stdoutproc(void *v)
 		n = dropcr(buf+npart, n);
 		if(n == 0)
 			continue;
+
+		if (extended)
+			dropCSI(buf+npart, n);
 
 		/* squash NULs */
 		s = memchr(buf+npart, 0, n);
@@ -756,6 +800,8 @@ sendtype(int fd0)
 					echoed(typing, n);
 				if(write(fd0, typing, n) != n)
 					error("sending to program");
+				if(extended)
+					write(2, typing, n);
 				nr = nrunes(typing, i);
 				q.p += nr;
 				ntyper -= nr;
