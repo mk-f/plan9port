@@ -47,6 +47,7 @@ CFid *eventfd;
 CFid *addrfd;
 CFid *datafd;
 CFid *ctlfd;
+CFid *logbodyfd;
 /* int bodyfd; */
 
 char	*typing;
@@ -57,7 +58,8 @@ int	debug;
 int	rcfd;
 int	cook = 1;
 int	password;
-int	extended;
+int	logcmds;
+int dropcsi;
 int	israw(int);
 
 char *name;
@@ -142,8 +144,11 @@ threadmain(int argc, char **argv)
 	case 'd':
 		debug = 1;
 		break;
-	case 'X':
-		extended = 1;
+	case 'l':
+		logcmds = 1;
+		break;
+	case 'f':
+		dropcsi = 1;
 		break;
 	case 'n':
 		name = EARGF(usage());
@@ -178,6 +183,17 @@ threadmain(int argc, char **argv)
 
 	if((fs = nsmount("acme", "")) == 0)
 		sysfatal("nsmount acme: %r");
+
+	ctlfd = fsopen(fs, "new/ctl", ORDWR|OCEXEC);
+	if(ctlfd == 0 || fsread(ctlfd, buf, 12) != 12)
+		sysfatal("ctl: %r");
+	id = atoi(buf);
+	sprint(buf, "%d/body", id);
+	logbodyfd = fsopen(fs, buf, ORDWR|OCEXEC);
+
+	sprint(buf, "name /mnt/logwin/%d\n0\n", id);
+	fswrite(ctlfd, buf, strlen(buf));
+
 	ctlfd = fsopen(fs, "new/ctl", ORDWR|OCEXEC);
 	if(ctlfd == 0 || fsread(ctlfd, buf, 12) != 12)
 		sysfatal("ctl: %r");
@@ -195,6 +211,8 @@ threadmain(int argc, char **argv)
 	sprint(buf, "%d/data", id);
 	datafd = fsopen(fs, buf, ORDWR|OCEXEC);
 	sprint(buf, "%d/body", id);
+
+
 /*	bodyfd = fsopenfd(fs, buf, ORDWR|OCEXEC); */
 	if(eventfd==nil || addrfd==nil || datafd==nil)
 		sysfatal("data files: %r");
@@ -592,7 +610,7 @@ stdoutproc(void *v)
 		if(n == 0)
 			continue;
 
-		if (extended)
+		if (dropcsi)
 			dropCSI(buf+npart, n);
 
 		/* squash NULs */
@@ -787,6 +805,7 @@ void
 sendtype(int fd0)
 {
 	int i, n, nr, raw;
+	char errx[ERRMAX];
 
 	raw = israw(fd0);
 	while(ntypebreak || (raw && ntypeb > 0)){
@@ -800,8 +819,18 @@ sendtype(int fd0)
 					echoed(typing, n);
 				if(write(fd0, typing, n) != n)
 					error("sending to program");
-				if(extended)
-					write(2, typing, n);
+				if(logcmds) {
+					if(fswrite(logbodyfd, typing, n) != n) {
+						rerrstr(errx, sizeof errx);
+
+						if(strncmp(errx, "deleted window", 14) == 0) {
+							fprint(2, "YOU closed the logwindow - no second chances!\n");
+							logcmds = 0;
+						} else {
+							error("sending to logbodyfd");
+						}
+					}
+				}
 				nr = nrunes(typing, i);
 				q.p += nr;
 				ntyper -= nr;
