@@ -184,15 +184,16 @@ threadmain(int argc, char **argv)
 	if((fs = nsmount("acme", "")) == 0)
 		sysfatal("nsmount acme: %r");
 
-	ctlfd = fsopen(fs, "new/ctl", ORDWR|OCEXEC);
-	if(ctlfd == 0 || fsread(ctlfd, buf, 12) != 12)
-		sysfatal("ctl: %r");
-	id = atoi(buf);
-	sprint(buf, "%d/body", id);
-	logbodyfd = fsopen(fs, buf, ORDWR|OCEXEC);
-
-	sprint(buf, "name /mnt/logwin/%d\n0\n", id);
-	fswrite(ctlfd, buf, strlen(buf));
+	if(logcmds){
+		ctlfd = fsopen(fs, "new/ctl", ORDWR|OCEXEC);
+		if(ctlfd == 0 || fsread(ctlfd, buf, 12) != 12)
+			sysfatal("ctl: %r");
+		id = atoi(buf);
+		sprint(buf, "%d/body", id);
+		logbodyfd = fsopen(fs, buf, ORDWR|OCEXEC);
+		sprint(buf, "name /mnt/logwin/%d\n0\n", id);
+		fswrite(ctlfd, buf, strlen(buf));
+	}
 
 	ctlfd = fsopen(fs, "new/ctl", ORDWR|OCEXEC);
 	if(ctlfd == 0 || fsread(ctlfd, buf, 12) != 12)
