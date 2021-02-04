@@ -819,7 +819,7 @@ sendtype(int fd0)
 					echoed(typing, n);
 				if(write(fd0, typing, n) != n)
 					error("sending to program");
-				if(logcmds) {
+				if(logcmds && !password) {
 					if(fswrite(logbodyfd, typing, n) != n) {
 						rerrstr(errx, sizeof errx);
 
