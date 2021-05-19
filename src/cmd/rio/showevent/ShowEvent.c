@@ -118,7 +118,7 @@ unsigned int state;
 	buffer[0] = 0;
 
 	for (i = 0; i < num_masks; i++)
-		if (state & masks[i].value)
+		if (state & masks[i].value) {
 			if (first) {
 				first = False;
 				strcpy(buffer, masks[i].string);
@@ -126,6 +126,7 @@ unsigned int state;
 				strcat(buffer, " | ");
 				strcat(buffer, masks[i].string);
 			}
+		}
 	return (buffer);
 }
 
@@ -150,7 +151,7 @@ unsigned int valuemask;
 	buffer[0] = 0;
 
 	for (i = 0; i < num_masks; i++)
-		if (valuemask & masks[i].value)
+		if (valuemask & masks[i].value) {
 			if (first) {
 				first = False;
 				strcpy(buffer, masks[i].string);
@@ -158,6 +159,7 @@ unsigned int valuemask;
 				strcat(buffer, " | ");
 				strcat(buffer, masks[i].string);
 			}
+		}
 
 	return (buffer);
 }
@@ -761,7 +763,7 @@ void ShowEvent(XEvent *eev)
 	printf("type=%s%s", GetType((XEvent*)ev), sep);
 	printf("serial=%ld%s", ev->serial, sep);
 	printf("send_event=%s%s", TorF(ev->send_event), sep);
-	printf("display=0x%p%s", ev->display, sep);
+	printf("display=0x%p%s", (void *) ev->display, sep);
 
 	switch (ev->type) {
 	case MotionNotify:

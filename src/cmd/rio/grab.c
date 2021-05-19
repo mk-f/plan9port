@@ -364,6 +364,8 @@ pullcalc(Client *c, int x, int y, BorderOrient bl, int init)
 	case BorderESE:
 		ycorn = 1;
 		break;
+	default:
+		break;
 	}
 	if(!init
 		|| xoff < 0 || (xcorn && xoff > CORNER) || (!xcorn && xoff > BORDER)
