@@ -246,3 +246,4 @@ Extern	int		errorshouldabort;
 Extern	int		menuing;		/* menu action is pending; waiting for window to be indicated */
 Extern	int		snarfversion;	/* updated each time it is written */
 Extern	int		messagesize;		/* negotiated in 9P version setup */
+Extern	int		darkmode;

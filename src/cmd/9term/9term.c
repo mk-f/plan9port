@@ -39,6 +39,7 @@ void	servedevtext(void);
 
 int errorshouldabort = 0;
 int cooked;
+int darkmode;
 
 void
 usage(void)
@@ -78,6 +79,9 @@ threadmain(int argc, char *argv[])
 		break;
 	case 'c':
 		cooked = TRUE;
+		break;
+	case 'b':
+		darkmode = TRUE;
 		break;
 	case 'w':	/* started from rio or 9wm */
 		use9wm = TRUE;
