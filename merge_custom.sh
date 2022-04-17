@@ -16,7 +16,8 @@ usage()
 new_branch="${1}"
 
 # remote branches to merge into $local
-set -- 	acme/dark-theme \
+set -- 	acme/argv-theme \
+	acme/tagbar \
 	acme/keyboard_ctrl \
 	acme/soft-tabs \
 	acme/spaces_tabs_via_9p \
