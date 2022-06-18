@@ -259,7 +259,7 @@ then
 		then
 			libsl="$libsl -L$X11/lib"
 		fi
-		libsl="$libsl -lX11"
+		libsl="$libsl -lX11 -lXrandr"
 	fi
 fi
 if $doautoframework
