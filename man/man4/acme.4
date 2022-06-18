@@ -267,6 +267,30 @@ may be undone in a single
 .B Undo
 interactive command.
 .TP
+.B autoindent
+Equivalent to the
+.B Indent
+interactive command with argument
+.IR on .
+.TP
+.B noautoindent
+Equivalent to the
+.B Indent
+interactive command with argument
+.IR off .
+.TP
+.B spacesindent
+Equivalent to the
+.B Spaces
+interactive command with argument
+.IR on .
+.TP
+.B nospacesindent
+Equivalent to the
+.B Spaces
+interactive command with argument
+.IR off .
+.TP
 .B put
 Equivalent to the
 .B Put
@@ -274,6 +298,12 @@ interactive command with no arguments; accepts no arguments.
 .TP
 .B show
 Guarantee at least some of the selected text is visible on the display.
+.TP
+.BI tabstop " tabstop
+Equivalent to the
+.B Tab
+interactive command with argrument
+.IR tabstop
 .RE
 .PD
 .TP
@@ -425,6 +455,17 @@ will cause the action to be applied to the file exactly as it would
 have been if the
 .B event
 file had not been open.
+.TP
+.B indent
+may be read to recover three numbers a, b and c with a 1 if
+.B Indent
+is
+.IR on ,
+0 otherwise; b 1 if
+.B Spaces
+is
+.IR on ,
+0 otherwise and c denoting the current tabstop-value.
 .TP
 .B tag
 holds contents of the window tag.  It may be read at any byte offset.
