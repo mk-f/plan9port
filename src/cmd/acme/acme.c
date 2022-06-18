@@ -43,11 +43,14 @@ char		*fontnames[2] =
 	"/lib/font/bit/lucm/unicode.9.font"
 };
 
+long	*theme = nil;
+
 Command *command;
 
 void	shutdownthread(void*);
 void	acmeerrorinit(void);
 void	readfile(Column*, char*);
+long *parsetheme(char*);
 static int	shutdown(void*, char*);
 
 void
@@ -113,6 +116,12 @@ threadmain(int argc, char *argv[])
 		break;
 	case 'r':
 		swapscrollbuttons = TRUE;
+		break;
+	case 't':
+		/* Forgive me. */
+		theme = parsetheme(ARGF());
+		if(theme == nil)
+			goto Usage;
 		break;
 	case 'W':
 		winsize = ARGF();
@@ -280,6 +289,55 @@ threadmain(int argc, char *argv[])
 	killprocs();
 	threadexitsall(nil);
 }
+
+long*
+parsetheme(char *spec)
+{
+	long *theme = malloc(sizeof(long)*NTHEME);
+	int which;
+	char *p = spec;
+	int i;
+
+	for(i=0; i<NTHEME; i++)
+		theme[i] = -1;
+
+	while(*spec){
+		while(*spec==',') spec++;
+		for(p=spec;*p != ':'; p++);
+		*p++=0;
+
+		if(strcmp(spec, "textback") == 0) which = Textback;
+		else if(strcmp(spec, "texthigh") == 0) which = Texthigh;
+		else if(strcmp(spec, "textbord") == 0) which = Textbord;
+		else if(strcmp(spec, "texttext") == 0) which = Texttext;
+		else if(strcmp(spec, "texthtext") == 0) which = Texthtext;
+		else if(strcmp(spec, "tagback") == 0) which = Tagback;
+		else if(strcmp(spec, "taghigh") == 0) which = Taghigh;
+		else if(strcmp(spec, "tagbord") == 0) which = Tagbord;
+		else if(strcmp(spec, "tagtext") == 0) which = Tagtext;
+		else if(strcmp(spec, "taghtext") == 0) which = Taghtext;
+		else if(strcmp(spec, "butmod") == 0) which = Butmod;
+		else if(strcmp(spec, "butcol") == 0) which = Butcol;
+		else if(strcmp(spec, "but2col") == 0) which = But2col;
+		else if(strcmp(spec, "but3col") == 0) which = But3col;
+		else{
+			fprint(2, "unrecognized key %s\n", spec);
+			return nil;
+		}
+
+		theme[which] = strtol(p, &spec, 16);
+	}
+
+	for(i=0; i<NTHEME; i++)
+		if(theme[i] < 0){
+			fprint(2, "missing key %d\n", i);
+			return nil;
+		}
+
+
+	return theme;
+}
+
 
 void
 readfile(Column *c, char *s)
@@ -1037,8 +1095,28 @@ iconinit(void)
 {
 	Rectangle r;
 	Image *tmp;
+	int i;
 
-	if(tagcols[BACK] == nil) {
+	if(theme){
+		textcols[BACK] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Textback]);
+		textcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Texthigh]);
+		textcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Textbord]);
+		textcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Texttext]);
+		textcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Texthtext]);
+
+		tagcols[BACK] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Tagback]);
+		tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Taghigh]);
+		tagcols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Tagbord]);
+		tagcols[TEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Tagtext]);
+		tagcols[HTEXT] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Taghtext]);
+
+/*
+		for(i=0;i<nelem(boxcursor.clr);i++)
+		if(boxcursor.clr[i] == 0x00)
+			boxcursor.clr[i] = Tagtext;
+*/
+
+	} else if(tagcols[BACK] == nil) {
 		/* Blue */
 		tagcols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
 		tagcols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
@@ -1075,15 +1153,23 @@ iconinit(void)
 	r.max.x -= ButtonBorder;
 	border(modbutton, r, ButtonBorder, tagcols[BORD], ZP);
 	r = insetrect(r, ButtonBorder);
-	tmp = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMedblue);
+	if(theme)
+		tmp = allocimage(display, Rect(0,0,1,1), screen->chan, 1, theme[Butmod]);
+	else
+		tmp = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DMedblue);
 	draw(modbutton, r, tmp, nil, ZP);
 	freeimage(tmp);
 
 	r = button->r;
-	colbutton = allocimage(display, r, screen->chan, 0, DPurpleblue);
-
-	but2col = allocimage(display, r, screen->chan, 1, 0xAA0000FF);
-	but3col = allocimage(display, r, screen->chan, 1, 0x006600FF);
+	if (theme){
+		colbutton = allocimage(display, r, screen->chan, 0, theme[Butcol]);
+		but2col = allocimage(display, r, screen->chan, 1, theme[But2col]);
+		but3col = allocimage(display, r, screen->chan, 1, theme[But3col]);
+	}else{
+		colbutton = allocimage(display, r, screen->chan, 0, DPurpleblue);
+		but2col = allocimage(display, r, screen->chan, 1, 0xAA0000FF);
+		but3col = allocimage(display, r, screen->chan, 1, 0x006600FF);
+	}
 }
 
 /*
