@@ -696,6 +696,14 @@ winctlprint(Window *w, char *buf, int fonts)
 	return buf;
 }
 
+char*
+winindentprint(Window *w, char *buf)
+{
+	sprint(buf, "%11d %11d %11d ", w->indent[AUTOINDENT],
+		w->indent[SPACESINDENT], w->body.tabstop);
+	return buf;
+}
+
 void
 winevent(Window *w, char *fmt, ...)
 {
