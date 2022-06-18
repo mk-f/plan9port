@@ -18,6 +18,7 @@ enum
 	QWeditout,
 	QWerrors,
 	QWevent,
+	QWindent,
 	QWrdsel,
 	QWwrsel,
 	QWtag,
@@ -303,6 +304,7 @@ void	winmousebut(Window*);
 void	winaddincl(Window*, Rune*, int);
 void	wincleartag(Window*);
 char	*winctlprint(Window*, char*, int);
+char	*winindentprint(Window*, char*);
 
 struct Column
 {
@@ -560,7 +562,7 @@ extern char		wdir[]; /* must use extern because no dimension given */
 extern int			editing;
 extern int			erroutfd;
 extern int			messagesize;		/* negotiated in 9P version setup */
-extern int			globalautoindent;
+extern int			globalindent[NINDENT];
 extern int			dodollarsigns;
 extern char*		mtpt;
 
