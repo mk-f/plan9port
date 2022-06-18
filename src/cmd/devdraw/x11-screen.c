@@ -39,6 +39,7 @@ static int _xtoplan9mouse(Xwin *w, XEvent *e, Mouse *m);
 static void _xmovewindow(Xwin *w, Rectangle r);
 static int _xtoplan9kbd(XEvent *e);
 static int _xselect(XEvent *e);
+static void _xrandr_rect(XDisplay *display, Xwin *win);
 
 static void	rpc_resizeimg(Client*);
 static void	rpc_resizewindow(Client*, Rectangle);
@@ -455,6 +456,7 @@ runxevent(XEvent *xev)
 			break;
 		if(k == XK_F11){
 			w->fullscreen = !w->fullscreen;
+			_xrandr_rect(_x.display, w);
 			_xmovewindow(w, w->fullscreen ? w->screenrect : w->windowrect);
 			return;
 		}
@@ -1116,6 +1118,42 @@ rpc_resizewindow(Client *client, Rectangle r)
 	XConfigureWindow(_x.display, w->drawable, value_mask, &e);
 	XFlush(_x.display);
 	xunlock();
+}
+
+static void
+_xrandr_rect(XDisplay *display, Xwin *win)
+{
+	int i, mx, my;
+	XRRScreenResources *resource;
+	XRRCrtcInfo *info;
+
+	/* XXX needs RandR 1.3 */
+	resource = XRRGetScreenResourcesCurrent(display, DefaultRootWindow(display));
+	if (!resource)
+		return;
+
+	/* middle of window */
+	mx = (win->windowrect.max.x + win->windowrect.min.x)/2;
+	my = (win->windowrect.max.y + win->windowrect.min.y)/2;
+
+	for (i = 0; i < resource->ncrtc; i++) {
+		info = XRRGetCrtcInfo(display, resource, resource->crtcs[i]);
+		if (!info)
+			goto out;
+
+		if ((mx >= info->x) && (mx <= info->x + info->width) &&
+			(my >= info->y) && (my <= info->y + info->height)) {
+			win->screenrect =
+				Rect(info->x, info->y,
+					info->x + info->width, info->y + info->height);
+				i = resource->ncrtc;
+		}
+
+		XRRFreeCrtcInfo(info);
+	}
+
+out:
+	XRRFreeScreenResources(resource);
 }
 
 static void
