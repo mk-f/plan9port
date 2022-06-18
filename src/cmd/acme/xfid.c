@@ -338,6 +338,10 @@ xfidread(Xfid *x)
 		b = winctlprint(w, buf, 1);
 		goto Readb;
 
+	case QWindent:
+		b = winindentprint(w, buf);
+		goto Readb;
+
 	Readbuf:
 		b = buf;
 	Readb:
@@ -528,6 +532,7 @@ xfidwrite(Xfid *x)
 		goto BodyTag;
 
 	case QWctl:
+	case QWindent:
 		xfidctlwrite(x, w);
 		break;
 
@@ -624,7 +629,7 @@ xfidctlwrite(Xfid *x, Window *w)
 	Fcall fc;
 	int i, m, n, nb, nr, nulls;
 	Rune *r;
-	char *err, *p, *pp, *q, *e;
+	char *err, *p, *pp, *q, *e, *ts;
 	int isfbuf, scrdraw, settag;
 	Text *t;
 
@@ -719,6 +724,29 @@ out:
 			fontx(&w->body, nil, nil, FALSE, XXX, r, nr);
 			m += (q+1) - pp;
 		}else
+		if(strncmp(p, "tabstop ", 8) == 0) {	/* set tabstop */
+			pp = p+8;
+			m = 8;
+			q = memchr(pp, '\n', e-pp);
+			if(q==nil || q==pp){
+				err = Ebadctl;
+				break;
+			}
+			*q = 0;
+			nulls = FALSE;
+			cvttorunes(pp, q-pp, r, &nb, &nr, &nulls);
+			if(nulls){
+				err = "nulls in tabstop string";
+				break;
+			}
+			ts = runetobyte(r, nr);
+			if('0'<=ts[0] && ts[0]<='9'){
+				w->body.tabstop = atoi(ts);
+				winresize(w, w->r, FALSE, TRUE);
+			}
+			free(ts);
+			m += (q+1) - pp;
+		}else
 		if(strncmp(p, "dump ", 5) == 0){	/* set dump string */
 			pp = p+5;
 			m = 5;
@@ -795,6 +823,22 @@ out:
 			w->limit.q0 = w->addr.q0;
 			w->limit.q1 = w->addr.q1;
 			m = 10;
+		}else
+		if(strncmp(p, "autoindent", 10) == 0){	/* turn on autoindent */
+			w->indent[AUTOINDENT] = TRUE;
+			m = 10;
+		}else
+		if(strncmp(p, "noautoindent", 12) == 0){	/* turn off autoindent */
+			w->indent[AUTOINDENT] = FALSE;
+			m = 12;
+		}else
+		if(strncmp(p, "spacesindent", 12) == 0){	/* turn on spacesindent */
+			w->indent[SPACESINDENT] = TRUE;
+			m = 12;
+		}else
+		if(strncmp(p, "nospacesindent", 14) == 0){	/* turn off spacesindent */
+			w->indent[SPACESINDENT] = FALSE;
+			m = 14;
 		}else
 		if(strncmp(p, "nomark", 6) == 0){	/* turn off automatic marking */
 			w->nomark = TRUE;
