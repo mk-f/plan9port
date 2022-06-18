@@ -283,31 +283,36 @@ dump_clients(void)
 void
 shuffle(int up)
 {
-	Client **l, *c;
+	Client **l, *c, *t1, *t2;
 
 	if(clients == 0 || clients->next == 0)
 		return;
+	c = 0;
+	/*for(c=clients; c->next; c=c->next) */
+	/*	; */
+	for(l=&clients; (*l)->next; l=&(*l)->next)
+		if ((*l)->state == 1)
+			c = *l;
+	if (c == 0)
+		return;
+
 	if(!up){
-		c = 0;
-		/*for(c=clients; c->next; c=c->next) */
-		/*	; */
-		for(l=&clients; (*l)->next; l=&(*l)->next)
-			if ((*l)->state == 1)
-				c = *l;
-		if (c == 0)
-			return;
-		XMapRaised(dpy, c->parent);
 		top(c);
-		active(c);
 	}else{
+		XLowerWindow(dpy, clients->window);
+
+		t1 = clients;
+		t2 = c->next;
+
+		c->next = clients;
+		clients = clients->next;
+		t1->next = t2;
+
 		c = clients;
-		for(l=&clients; *l; l=&(*l)->next)
-			;
-		clients = c->next;
-		*l = c;
-		c->next = 0;
-		XLowerWindow(dpy, c->window);
 	}
+
+	XMapRaised(dpy, c->parent);
+	active(c);
 /*	XMapRaised(dpy, clients->parent); */
 /*	top(clients);	 */
 /*	active(clients); */
