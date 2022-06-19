@@ -44,7 +44,7 @@ int darkmode;
 void
 usage(void)
 {
-	fprint(2, "usage: 9term [-sbx] [-f font] [-W winsize] [cmd ...]\n");
+	fprint(2, "usage: 9term [-sbLX] [-f font] [-W winsize] [cmd ...]\n");
 	threadexitsall("usage");
 }
 
@@ -65,11 +65,14 @@ threadmain(int argc, char *argv[])
 	mainpid = getpid();
 	messagesize = 8192;
 
+	dropcsi = TRUE;
+	loginshell = TRUE;
+
 	ARGBEGIN{
 	default:
 		usage();
-	case 'l':
-		loginshell = TRUE;
+	case 'L':
+		loginshell = FALSE;
 		break;
 	case 'f':
 		fontname = EARGF(usage());
@@ -83,8 +86,8 @@ threadmain(int argc, char *argv[])
 	case 'b':
 		darkmode = TRUE;
 		break;
-	case 'x':
-		dropcsi = TRUE;
+	case 'X':
+		dropcsi = FALSE;
 		break;
 	case 'w':	/* started from rio or 9wm */
 		use9wm = TRUE;
