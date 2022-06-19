@@ -8,25 +8,37 @@ set -e
 
 usage()
 {
-	printf "usage: %s <branch-to-create>\n" "${0##*/}"
+	printf "usage: %s <branch-to-create> [-f]\n" "${0##*/}"
+	printf "\t-f deletes all branches and syncs before merging again\n"
 	exit 1
 }
 
-[ $# -ne 1 ] && usage
+[ $# -lt 1 ] && usage
 new_branch="${1}"
+force="${2}"
+
+git checkout master
 
 # remote branches to merge into $local
 set -- 	acme/argv-theme \
-	acme/tagbar \
 	acme/keyboard_ctrl \
 	acme/soft-tabs \
-	acme/spaces_tabs_via_9p \
-	9term/win 
+	9term/darkmode
 
 remotes="$*"
 
+if [ -n "$force" ]; then
+	git fetch
+	for remote in $remotes; do
+		git branch -D "${remote}" || true
+	done
+
+	git branch -D "${new_branch}" || true
+fi
+	
+
 for remote in $remotes; do
-	git branch --track "${remote}" "origin/${remote}"
+	git branch --track "${remote}" "origin/${remote}" || true
 done
 
 git checkout -b "${new_branch}"
