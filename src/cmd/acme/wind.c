@@ -21,7 +21,7 @@ wininit(Window *w, Window *clone, Rectangle r)
 	File *f;
 	Reffont *rf;
 	Rune *rp;
-	int nc;
+	int nc, i;
 
 	w->tag.w = w;
 	w->taglines = 1;
@@ -80,10 +80,12 @@ wininit(Window *w, Window *clone, Rectangle r)
 	draw(screen, br, button, nil, button->r.min);
 	w->filemenu = TRUE;
 	w->maxlines = w->body.fr.maxlines;
-	w->autoindent = globalautoindent;
+	for(i=0; i<NINDENT; i++)
+		w->indent[i] = globalindent[i];
 	if(clone){
 		w->dirty = clone->dirty;
-		w->autoindent = clone->autoindent;
+		for(i=0; i<NINDENT; i++)
+			w->indent[i] = clone->indent[i];
 		textsetselect(&w->body, clone->body.q0, clone->body.q1);
 		winsettag(w);
 	}
@@ -691,6 +693,14 @@ winctlprint(Window *w, char *buf, int fonts)
 	if(fonts)
 		return smprint("%s%11d %q %11d %11d %11d ", buf, Dx(w->body.fr.r),
 			w->body.reffont->f->name, w->body.fr.maxtab, seqof(w, 1) != 0, seqof(w, 0) != 0);
+	return buf;
+}
+
+char*
+winindentprint(Window *w, char *buf)
+{
+	sprint(buf, "%11d %11d %11d ", w->indent[AUTOINDENT],
+		w->indent[SPACESINDENT], w->body.tabstop);
 	return buf;
 }
 
