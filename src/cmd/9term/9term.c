@@ -39,11 +39,12 @@ void	servedevtext(void);
 
 int errorshouldabort = 0;
 int cooked;
+int darkmode;
 
 void
 usage(void)
 {
-	fprint(2, "usage: 9term [-s] [-f font] [-W winsize] [cmd ...]\n");
+	fprint(2, "usage: 9term [-sbLX] [-f font] [-W winsize] [cmd ...]\n");
 	threadexitsall("usage");
 }
 
@@ -64,11 +65,14 @@ threadmain(int argc, char *argv[])
 	mainpid = getpid();
 	messagesize = 8192;
 
+	dropcsi = TRUE;
+	loginshell = TRUE;
+
 	ARGBEGIN{
 	default:
 		usage();
-	case 'l':
-		loginshell = TRUE;
+	case 'L':
+		loginshell = FALSE;
 		break;
 	case 'f':
 		fontname = EARGF(usage());
@@ -78,6 +82,12 @@ threadmain(int argc, char *argv[])
 		break;
 	case 'c':
 		cooked = TRUE;
+		break;
+	case 'b':
+		darkmode = TRUE;
+		break;
+	case 'X':
+		dropcsi = FALSE;
 		break;
 	case 'w':	/* started from rio or 9wm */
 		use9wm = TRUE;
@@ -411,6 +421,7 @@ rcoutputproc(void *arg)
 	Conswritemesg cwm;
 	Rune *r;
 	Stringpair pair;
+	char *s, *t;
 
 	i = 0;
 	cnt = 0;
@@ -424,6 +435,17 @@ rcoutputproc(void *arg)
 			threadexitsall("eof on rc output");
 		}
 		n = echocancel(data+cnt, n);
+		if(dropcsi){
+			dropCSI(data+cnt, n);
+			/* squash NULs */
+			s = memchr(data+cnt, 0, n);
+			if(s){
+				for(t=s; s<data+cnt+n; s++)
+					if(*t = *s)	/* assign = */
+						t++;
+				n = t-(data+cnt);
+			}
+		}
 		if(n == 0)
 			continue;
 		cnt += n;

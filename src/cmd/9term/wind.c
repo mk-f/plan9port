@@ -35,6 +35,10 @@ static	Image	*holdcol;
 static	Image	*lightholdcol;
 static	Image	*paleholdcol;
 
+static	Image	*bg;
+static	Image	*fg;
+static	Image	*lb;
+
 static int
 wscale(Window *w, int n)
 {
@@ -50,19 +54,37 @@ wmk(Image *i, Mousectl *mc, Channel *ck, Channel *cctl, int scrolling)
 	Rectangle r;
 
 	if(cols[0] == nil){
+		bg = allocimage(display, Rect(0,0,1,1), RGBA32, 1, 0x1d1f21FF);
+		fg = allocimage(display, Rect(0,0,1,1), RGBA32, 1, 0xc5c8c6FF);
+		lb = allocimage(display, Rect(0,0,1,1), RGBA32, 1, 0x4c7899FF);
+
 		/* greys are multiples of 0x11111100+0xFF, 14* being palest */
 		grey = allocimage(display, Rect(0,0,1,1), CMAP8, 1, 0xEEEEEEFF);
 		darkgrey = allocimage(display, Rect(0,0,1,1), CMAP8, 1, 0x666666FF);
-		cols[BACK] = display->white;
+		if (darkmode)
+			cols[BACK] = bg;
+		else
+			cols[BACK] = display->white;
 		cols[HIGH] = allocimage(display, Rect(0,0,1,1), CMAP8, 1, 0xCCCCCCFF);
 		cols[BORD] = allocimage(display, Rect(0,0,1,1), CMAP8, 1, 0x999999FF);
-		cols[TEXT] = display->black;
-		cols[HTEXT] = display->black;
+		if (darkmode) {
+			cols[TEXT] = fg;
+			cols[HTEXT] = fg;
+		} else {
+			cols[TEXT] = display->black;
+			cols[HTEXT] = display->black;
+		}
 		titlecol = allocimage(display, Rect(0,0,1,1), CMAP8, 1, DGreygreen);
 		lighttitlecol = allocimage(display, Rect(0,0,1,1), CMAP8, 1, DPalegreygreen);
-		holdcol = allocimage(display, Rect(0,0,1,1), CMAP8, 1, DMedblue);
+
+		if(darkmode)
+			holdcol = lb;
+		else
+			holdcol = allocimage(display, Rect(0,0,1,1), CMAP8, 1, DMedblue);
+
 		lightholdcol = allocimage(display, Rect(0,0,1,1), CMAP8, 1, DGreyblue);
 		paleholdcol = allocimage(display, Rect(0,0,1,1), CMAP8, 1, DPalegreyblue);
+
 	}
 	w = emalloc(sizeof(Window));
 	w->screenr = i->r;
@@ -684,20 +706,25 @@ wkeyctl(Window *w, Rune r)
 		waddraw(w, &r, 1);
 		return;
 	}
-	if(r == Kcmd+'x'){
+	if(r == 0x18){
 		wsnarf(w);
 		wcut(w);
 		wscrdraw(w);
 		return;
 	}
-	if(r == Kcmd+'c'){
+	if(r == 0x03){
 		wsnarf(w);
 		return;
 	}
-	if(r == Kcmd+'v'){
+	if(r == 0x16){
 		riogetsnarf();
 		wpaste(w);
 		wscrdraw(w);
+		return;
+	}
+	if(r == 0x02){	/* ^B output point */
+		wsetselect(w, w->qh, w->qh);
+		wshow(w, w->q0);
 		return;
 	}
 	if(r != 0x7F){
@@ -763,10 +790,22 @@ wsetcols(Window *w)
 		else
 			w->f.cols[TEXT] = w->f.cols[HTEXT] = lightholdcol;
 	else
-		if(w == input)
-			w->f.cols[TEXT] = w->f.cols[HTEXT] = display->black;
-		else
-			w->f.cols[TEXT] = w->f.cols[HTEXT] = darkgrey;
+		if(darkmode) {
+			if(w == input) {
+				w->f.cols[TEXT] = fg;
+				w->f.cols[HTEXT] = bg;
+				}
+			else {
+				w->f.cols[TEXT] = bg;
+				w->f.cols[HTEXT] = fg;
+			}
+		} else {
+			if(w == input)
+				w->f.cols[TEXT] = w->f.cols[HTEXT] = display->black;
+			else
+				w->f.cols[TEXT] = w->f.cols[HTEXT] = darkgrey;
+		}
+
 }
 
 void
