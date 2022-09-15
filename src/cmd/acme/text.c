@@ -17,6 +17,8 @@ Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
 static Rune Ldot[] = { '.', 0 };
 
+extern long *theme;
+
 enum{
 	TABDIR = 3	/* width of tabs in directory windows */
 };
@@ -45,6 +47,10 @@ textredraw(Text *t, Rectangle r, Font *f, Image *b, int odx)
 	Rectangle rr;
 
 	frinit(&t->fr, r, f, b, t->fr.cols);
+	if(theme){
+		freeimage(t->fr.tick);
+		t->fr.tick = allocimage(f->display, Rect(0, 0, t->fr.tickscale*2, t->fr.font->height), t->fr.b->chan, 0, theme[Tagtext]);
+	}
 	rr = t->fr.r;
 	rr.min.x -= Scrollwid+Scrollgap;	/* back fill to scroll bar */
 	if(!t->fr.noredraw)
@@ -1258,13 +1264,17 @@ enum {
 };
 
 uint
-xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is down */
+xselect(Text *t, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is down */
 {
 	uint p0, p1, q, tmp;
 	ulong msec;
 	Point mp, pt0, pt1, qt;
 	int reg, b;
+	Frame *f;
+	Image *sel;
 
+	f = &t->fr;
+	sel = textcols[HTEXT];
 	mp = mc->m.xy;
 	b = mc->m.buttons;
 	msec = mc->m.msec;
@@ -1291,12 +1301,12 @@ xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is
 				pt1 = pt0;
 				reg = region(q, p0);
 				if(reg == 0)
-					frdrawsel0(f, pt0, p0, p1, col, display->white);
+					frdrawsel0(f, pt0, p0, p1, col, sel);
 			}
 			qt = frptofchar(f, q);
 			if(reg > 0){
 				if(q > p1)
-					frdrawsel0(f, pt1, p1, q, col, display->white);
+					frdrawsel0(f, pt1, p1, q, col, sel);
 
 				else if(q < p1)
 					selrestore(f, qt, q, p1);
@@ -1304,7 +1314,7 @@ xselect(Frame *f, Mousectl *mc, Image *col, uint *p1p)	/* when called, button is
 				if(q > p1)
 					selrestore(f, pt1, p1, q);
 				else
-					frdrawsel0(f, qt, q, p1, col, display->white);
+					frdrawsel0(f, qt, q, p1, col, sel);
 			}
 			p1 = q;
 			pt1 = qt;
@@ -1346,7 +1356,7 @@ textselect23(Text *t, uint *q0, uint *q1, Image *high, int mask)
 	uint p0, p1;
 	int buts;
 
-	p0 = xselect(&t->fr, mousectl, high, &p1);
+	p0 = xselect(t, mousectl, high, &p1);
 	buts = mousectl->m.buttons;
 	if((buts & mask) == 0){
 		*q0 = p0+t->org;

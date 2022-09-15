@@ -558,6 +558,28 @@ char*		mtpt;
 
 enum
 {
+	Textback,
+	Texthigh,
+	Textbord,
+	Texttext,
+	Texthtext,
+
+	Tagback,
+	Taghigh,
+	Tagbord,
+	Tagtext,
+	Taghtext,
+
+	Butmod,
+	Butcol,
+	But2col,
+	But3col,
+
+	NTHEME
+};
+
+enum
+{
 	Kscrolloneup		= KF|0x20,
 	Kscrollonedown	= KF|0x21
 };
