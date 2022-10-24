@@ -64,6 +64,7 @@ struct Wlwin {
 	struct xkb_context *xkb_context;
 
 	struct zxdg_decoration_manager_v1 *decoman;
+	struct zwp_pointer_constraints_v1 *pointer_constraints;
 };
 
 void wlallocbuffer(Wlwin*);
@@ -74,3 +75,4 @@ void wlsetsnarf(Wlwin*, char*);
 void wldrawcursor(Wlwin*, Cursor*);
 void wlresize(Wlwin*, int, int);
 void wlflush(Wlwin*);
+void wlsetmouse(Wlwin*, int, int);
