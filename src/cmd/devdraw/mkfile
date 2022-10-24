@@ -41,6 +41,7 @@ $O.macargv: $MACARGV
 
 xdgshell=/usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml
 xdgdeco=/usr/share/wayland-protocols/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml
+xdgpconst=/usr/share/wayland-protocols/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml
 
 xdg-shell-protocol.c:
 	wayland-scanner private-code < $xdgshell > xdg-shell-protocol.c
@@ -53,6 +54,13 @@ xdg-decoration-protocol.c:
 
 xdg-decoration-protocol.h:
 	wayland-scanner client-header < $xdgdeco > xdg-decoration-protocol.h
+
+xdg-pointer-constraints-protocol.c:
+	wayland-scanner private-code < $xdgpconst > xdg-pointer-constraints-protocol.c
+
+xdg-pointer-constraints-protocol.h:
+	wayland-scanner client-header < $xdgpconst > xdg-pointer-constraints-protocol.h
+
 
 %.$O: %.m
 	$CC $CFLAGS $OBJCFLAGS -fobjc-arc -o $target $stem.m
