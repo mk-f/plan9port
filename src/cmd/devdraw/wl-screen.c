@@ -149,6 +149,7 @@ gfx_main(void)
 {
 	clientruning = 1;
 	gfx_started();
+	for(;;) sleep(3600*1000);
 }
 
 Memimage*
@@ -205,7 +206,7 @@ rpc_bouncemouse(Client *c, Mouse m)
 void
 rpc_setlabel(Client *c, char *s)
 {
-	wlsettitle(c->view, s);
+	wlsettitle((Wlwin*)c->view, s);
 }
 
 void
@@ -216,6 +217,11 @@ rpc_topwin(Client *c)
 void
 rpc_setmouse(Client *c, Point p)
 {
+	Wlwin *wl;
+
+	fprint(2, "setmouse called\n");
+	wl = (Wlwin*)c->view;
+	wlsetmouse(wl, p.x, p.y);
 }
 
 void
