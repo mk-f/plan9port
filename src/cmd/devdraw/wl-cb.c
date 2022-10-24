@@ -10,6 +10,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include "xdg-shell-protocol.h"
 #include "xdg-decoration-protocol.h"
+#include "xdg-pointer-constraints-protocol.h"
 
 #include <u.h>
 #include <errno.h>
@@ -130,10 +131,38 @@ keyboard_key(void *data, struct wl_keyboard *keyboard, uint32_t serial, uint32_t
 	case XKB_KEY_Tab:
 		utf32 = '\t';
 		break;
+	case XKB_KEY_Left:
+		utf32 = Kleft;
+		break;
+	case XKB_KEY_Right:
+		utf32 = Kright;
+		break;
+	case XKB_KEY_Up:
+		utf32 = Kup;
+		break;
+	case XKB_KEY_Down:
+		utf32 = Kdown;
+		break;
+	case XKB_KEY_Home:
+		utf32 = Khome;
+		break;
+	case XKB_KEY_End:
+		utf32 = Kend;
+		break;
+	case XKB_KEY_Page_Up:
+		utf32 = Kpgup;
+		break;
+	case XKB_KEY_Page_Down:
+		utf32 = Kpgdown;
+		break;
 	default:
 		utf32 = xkb_keysym_to_utf32(keysym);
 		break;
 	}
+
+	if (xkb_state_mod_name_is_active(wl->xkb_state, XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) == 1)
+		utf32  &= 0x9f;
+
 	if(utf32){
 		gfx_keystroke(wl->client, utf32);
 	}
@@ -397,6 +426,8 @@ handle_global(void *data, struct wl_registry *registry, uint32_t name, const cha
 		wl->data_device_manager = wl_registry_bind(registry, name, &wl_data_device_manager_interface, 3);
 	} else if(strcmp(interface, zxdg_decoration_manager_v1_interface.name) == 0) {
 		wl->decoman = wl_registry_bind(registry, name, &zxdg_decoration_manager_v1_interface, 1);
+	} else if(strcmp(interface, zwp_pointer_constraints_v1_interface.name) == 0) {
+		wl->pointer_constraints = wl_registry_bind(registry, name, &zwp_pointer_constraints_v1_interface, 1);
 	}
 }
 
@@ -485,4 +516,25 @@ wlgetsnarf(Wlwin *wl)
 	s = strdup(wl->clip.content);
 	qunlock(&wl->clip.lk);
 	return s;
+}
+
+void
+wlsetmouse(Wlwin *wl, int x, int y)
+{
+	struct zwp_locked_pointer_v1 *l;
+
+	l = zwp_pointer_constraints_v1_lock_pointer(
+		wl->pointer_constraints,
+		wl->surface,
+		wl->pointer,
+		NULL,
+		ZWP_POINTER_CONSTRAINTS_V1_LIFETIME_ONESHOT
+		);
+
+	zwp_locked_pointer_v1_set_cursor_position_hint(l, wl_fixed_from_int(x), wl_fixed_from_int(y));
+
+	wl->mouse.xy.x = x;
+	wl->mouse.xy.y = y;
+	wl_surface_commit(wl->surface);
+	zwp_locked_pointer_v1_destroy(l);
 }
