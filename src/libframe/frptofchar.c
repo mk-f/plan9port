@@ -59,6 +59,7 @@ _frgrid(Frame *f, Point p)
 	p.y -= f->r.min.y;
 	p.y -= p.y%f->font->height;
 	p.y += f->r.min.y;
+	p.x += (f->font->width / 2);
 	if(p.x > f->r.max.x)
 		p.x = f->r.max.x;
 	return p;
