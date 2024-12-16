@@ -203,12 +203,22 @@ static void
 pointer_handle_button(void *data, struct wl_pointer *pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
 {
 	Wlwin *wl;
-
 	wl = data;
+
+	int shift = 0;
+	int kb = 0;
+
 	if(state)
 		switch(button){
 		case WlMouse1: /* M1 */
-			wl->mouse.buttons |= P9Mouse1;
+			if (xkb_state_mod_name_is_active(wl->xkb_state, XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE) == 1)
+				kb |= P9Mouse2;
+
+			if (xkb_state_mod_name_is_active(wl->xkb_state, XKB_MOD_NAME_ALT, XKB_STATE_MODS_EFFECTIVE) == 1)
+				kb |= P9Mouse3;
+
+			if (!kb)
+				wl->mouse.buttons |= P9Mouse1;
 			break;
 		case WlMouse2: /* M2 */
 			wl->mouse.buttons |= P9Mouse2;
@@ -230,8 +240,12 @@ pointer_handle_button(void *data, struct wl_pointer *pointer, uint32_t serial, u
 			break;
 		}
 
+	if (xkb_state_mod_name_is_active(wl->xkb_state, XKB_MOD_NAME_SHIFT, XKB_STATE_MODS_EFFECTIVE) == 1)
+		shift = 5;
+
 	wl->mouse.msec = time;
-	gfx_mousetrack(wl->client, wl->mouse.xy.x, wl->mouse.xy.y, wl->mouse.buttons, wl->mouse.msec);
+
+	gfx_mousetrack(wl->client, wl->mouse.xy.x, wl->mouse.xy.y, (wl->mouse.buttons|kb)<<shift, wl->mouse.msec);
 }
 
 static void
