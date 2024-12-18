@@ -50,6 +50,21 @@ void	acmeerrorinit(void);
 void	readfile(Column*, char*);
 static int	shutdown(void*, char*);
 
+enum {
+	Win,
+	Run
+};
+
+char		*menu2str[] = {
+	"win",
+	"run",
+	nil
+};
+Menu menu2 =
+{
+	menu2str
+};
+
 void
 derror(Display *d, char *errorstr)
 {
@@ -511,7 +526,9 @@ void
 mousethread(void *v)
 {
 	Text *t, *argt;
-	int but;
+	int but, menu;
+	Runestr dir;
+	char *cmd;
 	uint q0, q1;
 	Window *w;
 	Plumbmsg *pm;
@@ -665,6 +682,23 @@ mousethread(void *v)
 				}else if(m.buttons & (4|(4<<Shift))){
 					if(textselect3(t, &q0, &q1))
 						look3(t, q0, q1, FALSE, (m.buttons&(4<<Shift))!=0);
+				}else if((m.buttons & (2<<Shift)) && w){
+					// 7 because menuhit wants the number of the button and not the bit-pattern:
+					// while(mc->m.buttons & (1<<(but-1)))
+					menu = menuhit(7, mousectl, &menu2, nil);
+					if(menu != -1){
+						dir = dirname(t, nil, 0);
+						if(dir.nr==1 && dir.r[0]=='.'){	/* sigh */
+							free(dir.r);
+							dir.r = nil;
+							dir.nr = 0;
+						}
+						cmd = emalloc(strlen(menu2str[menu])+1);
+						sprint(cmd, "%s", menu2str[menu]);
+						if(t->w)
+							incref(&t->w->ref);
+						run(t->w, cmd, dir.r, dir.nr, TRUE, nil, nil, FALSE);
+					}
 				}
 				if(w)
 					winunlock(w);
