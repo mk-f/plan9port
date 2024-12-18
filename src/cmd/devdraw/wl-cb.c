@@ -253,11 +253,17 @@ pointer_handle_motion(void *data, struct wl_pointer *wl_pointer, uint32_t time, 
 {
 	Wlwin *wl;
 
+	int shift = 0;
+
 	wl = data;
 	wl->mouse.xy.x = surface_x / 256;
 	wl->mouse.xy.y = surface_y / 256;
 	wl->mouse.msec = time;
-	gfx_mousetrack(wl->client, wl->mouse.xy.x, wl->mouse.xy.y, wl->mouse.buttons, wl->mouse.msec);
+
+	if (xkb_state_mod_name_is_active(wl->xkb_state, XKB_MOD_NAME_SHIFT, XKB_STATE_MODS_EFFECTIVE) == 1)
+		shift = 5;
+
+	gfx_mousetrack(wl->client, wl->mouse.xy.x, wl->mouse.xy.y, (wl->mouse.buttons)<<shift, wl->mouse.msec);
 }
 
 static void
@@ -467,7 +473,7 @@ wlsetcb(Wlwin *wl)
 	wl_registry_add_listener(registry, &registry_listener, wl);
 	wl_display_roundtrip(wl->display);
 	wl->xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	
+
 	if(wl->shm == nil || wl->compositor == nil || wl->xdg_wm_base == nil || wl->seat == nil || wl->decoman == nil)
 		sysfatal("Registration fell short");
 
