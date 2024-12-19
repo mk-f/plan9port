@@ -57,7 +57,8 @@ enum {
 
 char		*menu2str[] = {
 	"win",
-	"run",
+	"Spell",
+	"Spell de_DE",
 	nil
 };
 Menu menu2 =
