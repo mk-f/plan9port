@@ -65,7 +65,7 @@ xdg-pointer-constraints-protocol.h:
 %.$O: %.m
 	$CC $CFLAGS $OBJCFLAGS -fobjc-arc -o $target $stem.m
 
-CLEANFILES=$O.devdraw $O.macargv $O.drawclient $O.mklatinkbd latin1.h
+CLEANFILES=$O.devdraw $O.macargv $O.drawclient $O.mklatinkbd latin1.h xdg-shell-protocol.* xdg-decoration-protocol.* xdg-pointer-constraints-protocol.*
 
 install: mklatinkbd.install
 install:Q:
