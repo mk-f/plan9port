@@ -28,7 +28,7 @@ nsfromdisplay(void)
 	Dir *d;
 	char *disp, *p;
 
-	if((disp = getenv("DISPLAY")) == nil){
+	if((disp = getenv("DISPLAY")) == nil && (disp = getenv("WAYLAND_DISPLAY")) == nil){
 #ifdef __APPLE__
 		// Might be running native GUI on OS X.
 		disp = strdup(":0.0");
