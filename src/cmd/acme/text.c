@@ -777,6 +777,11 @@ texttype(Text *t, Rune r)
 			nnb = textbswidth(t, 0x15);
 		textshow(t, t->q0-nnb, t->q0-nnb, TRUE);
 		return;
+	case 0x02:
+		typecommit(t);
+		textsetselect(t, t->file->b.nc, t->file->b.nc);
+		textshow(t, t->file->b.nc, t->file->b.nc, FALSE);
+		return;
 	case 0x05:	/* ^E: end of line */
 		typecommit(t);
 		q0 = t->q0;
