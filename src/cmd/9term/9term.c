@@ -65,6 +65,8 @@ threadmain(int argc, char *argv[])
 	mainpid = getpid();
 	messagesize = 8192;
 
+	dropcsi = 1;
+
 	threadmaybackground();
 
 	env = getenv("__CFBundleIdentifier");
@@ -101,6 +103,9 @@ threadmain(int argc, char *argv[])
 		break;
 	case 'w':	/* started from rio or 9wm */
 		use9wm = TRUE;
+		break;
+	case 'X':
+		dropcsi = 0;
 		break;
 	case 'W':
 		winsize = EARGF(usage());
@@ -431,6 +436,7 @@ rcoutputproc(void *arg)
 	Conswritemesg cwm;
 	Rune *r;
 	Stringpair pair;
+	char *s, *t;
 
 	i = 0;
 	cnt = 0;
@@ -444,6 +450,17 @@ rcoutputproc(void *arg)
 			threadexitsall("eof on rc output");
 		}
 		n = echocancel(data+cnt, n);
+		if(dropcsi){
+			dropCSI(data+cnt, n);
+			/* squash NULs */
+			s = memchr(data+cnt, 0, n);
+			if(s){
+				for(t=s; s<data+cnt+n; s++)
+					if(*t = *s)	/* assign = */
+						t++;
+				n = t-(data+cnt);
+			}
+		}
 		if(n == 0)
 			continue;
 		cnt += n;
