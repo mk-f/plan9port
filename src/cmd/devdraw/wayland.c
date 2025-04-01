@@ -549,6 +549,11 @@ void wl_pointer_motion(void *data, struct wl_pointer *wl_pointer, uint32_t time,
 	int y = wl->mouse_y;
 	int b = wl->buttons;
 
+	int shift = 0;
+	if (xkb_state_mod_name_is_active(wl->xkb_state, XKB_MOD_NAME_SHIFT,
+			XKB_STATE_MODS_EFFECTIVE) == 1)
+		shift = 5;
+
 	qunlock(&wayland_lock);
 	gfx_mousetrack(c, x, y, b, (uint) time);
 }
@@ -592,6 +597,11 @@ void wl_pointer_button(void *data, struct wl_pointer *wl_pointer, uint32_t seria
 			mask = 1 << ALT_BUTTON;
 		}
 	}
+
+	if (xkb_state_mod_name_is_active(wl->xkb_state, XKB_MOD_NAME_SHIFT,
+			XKB_STATE_MODS_EFFECTIVE) == 1)
+		mask <<= 5;
+
 	DEBUG("wl_pointer_button: mask=%x\n", mask);
 
 	switch (state) {
@@ -631,6 +641,7 @@ void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer, uint32_t time,
 	} else if (value > 0) {
 		b |= 1 << 4;
 	}
+	/*
 	int mag = fabs(value);
 	if (mag > 1) {
 		wl->repeat_scroll_button = b;
@@ -640,6 +651,7 @@ void wl_pointer_axis(void *data, struct wl_pointer *wl_pointer, uint32_t time,
 		wl_callback_add_listener(wl->wl_scroll_repeat_callback,
 				&wl_callback_scroll_listener, c);
 	}
+	*/
 	b |= wl->buttons;
 
 	qunlock(&wayland_lock);
