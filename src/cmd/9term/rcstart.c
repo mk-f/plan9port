@@ -4,6 +4,7 @@
 #include "term.h"
 
 int loginshell;
+int dropcsi;
 
 static void
 sys(char *buf, int devnull)
@@ -194,4 +195,41 @@ dropcrnl(char *p, int n)
 		*w++ = *r;
 	}
 	return w-p;
+}
+
+void
+dropCSI(char *p, int n)
+{
+	int i;
+	char *s;
+	enum { start, ESC, CSI } state = start;
+
+	for(i=0; i<n; i++) {
+		switch(state) {
+			case start:
+				if (*p == 0x1b) {
+					s = p;
+					state = ESC;
+				}
+				break;
+			case ESC:
+				if (*p == '[')
+					state = CSI;
+				else
+					state = start;
+				break;
+			case CSI:
+				if ((*p >= 0x40) && (*p <= 0x7e)) {
+					/* squash nul will clean up after us */
+					memset(s, 0, p-s+1);
+					state = start;
+				}
+				else if ((*p >= 0x30) && (*p <= 0x3F))
+					state = CSI;
+				else /* invalid */
+					state = start;
+				break;
+		}
+		p++;
+	}
 }

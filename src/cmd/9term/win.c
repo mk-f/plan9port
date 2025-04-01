@@ -93,7 +93,7 @@ fsfidprint(CFid *fid, char *fmt, ...)
 void
 usage(void)
 {
-	fprint(2, "usage: win cmd args...\n");
+	fprint(2, "usage: win [-X] cmd args...\n");
 	threadexitsall("usage");
 }
 
@@ -136,6 +136,7 @@ threadmain(int argc, char **argv)
 	char *dump;
 
 	dump = onestring(argc, argv);
+	dropcsi = 1;
 
 	ARGBEGIN{
 	case 'd':
@@ -143,6 +144,9 @@ threadmain(int argc, char **argv)
 		break;
 	case 'n':
 		name = EARGF(usage());
+		break;
+	case 'X':
+		dropcsi = 0;
 		break;
 	default:
 		usage();
@@ -550,6 +554,9 @@ stdoutproc(void *v)
 		n = dropcr(buf+npart, n);
 		if(n == 0)
 			continue;
+
+		if(dropcsi)
+			dropCSI(buf+npart,n);
 
 		/* squash NULs */
 		s = memchr(buf+npart, 0, n);
