@@ -23,8 +23,8 @@
 
 // alt+click and ctl+click are mapped to mouse buttons
 // to support single button mice.
-#define ALT_BUTTON 1
-#define CTL_BUTTON 2
+#define ALT_BUTTON 2
+#define CTL_BUTTON 1
 
 struct WaylandBuffer {
 	int w;
