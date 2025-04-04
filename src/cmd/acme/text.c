@@ -999,6 +999,8 @@ textcommit(Text *t, int tofile)
 
 static	Text	*clicktext;
 static	uint	clickmsec;
+static	int	clickcount;
+static	Point	clickpt;
 static	Text	*selecttext;
 static	uint	selectq;
 
@@ -1040,14 +1042,12 @@ textframescroll(Text *t, int dl)
 	textsetorigin(t, q0, TRUE);
 }
 
-
 void
 textselect(Text *t)
 {
 	uint q0, q1;
-	int b, x, y;
+	int b, x, y, dx, dy;
 	int state;
-	enum { None, Cut, Paste };
 
 	selecttext = t;
 	/*
@@ -1057,25 +1057,36 @@ textselect(Text *t)
 	b = mouse->buttons;
 	q0 = t->q0;
 	q1 = t->q1;
+	dx = abs(clickpt.x - mouse->xy.x);
+	dy = abs(clickpt.y - mouse->xy.y);
+	clickpt = mouse->xy;
 	selectq = t->org+frcharofpt(&t->fr, mouse->xy);
-	if(clicktext==t && mouse->msec-clickmsec<500)
-	if(q0==q1 && selectq==q0){
-		textdoubleclick(t, &q0, &q1);
+	clickcount++;
+	if(mouse->msec-clickmsec >= 500 || selecttext != t || clickcount > 3 || dx > 3 || dy > 3)
+		clickcount = 0;
+	if(clickcount >= 1 && selecttext==t && mouse->msec-clickmsec < 500){
+		textstretchsel(t, &q0, &q1, clickcount);
 		textsetselect(t, q0, q1);
 		flushimage(display, 1);
 		x = mouse->xy.x;
 		y = mouse->xy.y;
 		/* stay here until something interesting happens */
-		do
+		while(1){
 			readmouse(mousectl);
-		while(mouse->buttons==b && abs(mouse->xy.x-x)<3 && abs(mouse->xy.y-y)<3);
+			dx = abs(mouse->xy.x - x);
+			dy = abs(mouse->xy.y - y);
+			if(mouse->buttons != b || dx >= 3 || dy >= 3)
+				break;
+			clickcount++;
+			clickmsec = mouse->msec;
+		}
 		mouse->xy.x = x;	/* in case we're calling frselect */
 		mouse->xy.y = y;
 		q0 = t->q0;	/* may have changed */
 		q1 = t->q1;
-		selectq = q0;
+		selectq = t->org+frcharofpt(&t->fr, mouse->xy);;
 	}
-	if(mouse->buttons == b){
+	if(mouse->buttons == b && clickcount == 0){
 		t->fr.scroll = framescroll;
 		frselect(&t->fr, mousectl);
 		/* horrible botch: while asleep, may have lost selection altogether */
@@ -1092,43 +1103,41 @@ textselect(Text *t)
 			q1 = t->org+t->fr.p1;
 	}
 	if(q0 == q1){
-		if(q0==t->q0 && clicktext==t && mouse->msec-clickmsec<500){
-			textdoubleclick(t, &q0, &q1);
-			clicktext = nil;
-		}else{
+		if(q0==t->q0 && mouse->msec-clickmsec<500)
+			textstretchsel(t, &q0, &q1, clickcount);
+		else
 			clicktext = t;
-			clickmsec = mouse->msec;
-		}
+		clickmsec = mouse->msec;
 	}else
 		clicktext = nil;
 	textsetselect(t, q0, q1);
 	flushimage(display, 1);
-	state = None;	/* what we've done; undo when possible */
+	state = 0;	/* undo when possible; +1 for cut, -1 for paste */
 	while(mouse->buttons){
 		mouse->msec = 0;
 		b = mouse->buttons;
 		if((b&1) && (b&6)){
-			if(state==None && t->what==Body){
+			if(state==0 && t->what==Body){
 				seq++;
 				filemark(t->w->body.file);
 			}
 			if(b & 2){
-				if(state==Paste && t->what==Body){
+				if(state==-1 && t->what==Body){
 					winundo(t->w, TRUE);
-					textsetselect(t, q0, t->q1);
-					state = None;
-				}else if(state != Cut){
+					textsetselect(t, q0, t->q0);
+					state = 0;
+				}else if(state != 1){
 					cut(t, t, nil, TRUE, TRUE, nil, 0);
-					state = Cut;
+					state = 1;
 				}
 			}else{
-				if(state==Cut && t->what==Body){
+				if(state==1 && t->what==Body){
 					winundo(t->w, TRUE);
 					textsetselect(t, q0, t->q1);
-					state = None;
-				}else if(state != Paste){
+					state = 0;
+				}else if(state != -1){
 					paste(t, t, nil, TRUE, FALSE, nil, 0);
-					state = Paste;
+					state = -1;
 				}
 			}
 			textscrdraw(t);
@@ -1137,7 +1146,8 @@ textselect(Text *t)
 		flushimage(display, 1);
 		while(mouse->buttons == b)
 			readmouse(mousectl);
-		clicktext = nil;
+		if(mouse->msec-clickmsec >= 500)
+			clicktext = nil;
 	}
 }
 
@@ -1447,11 +1457,29 @@ Rune *right[] = {
 };
 
 void
-textdoubleclick(Text *t, uint *q0, uint *q1)
+textstretchsel(Text *t, uint *q0, uint *q1, int mode)
 {
-	int c, i;
-	Rune *r, *l, *p;
+	int c, i, lc, rc;
+	Rune *r, *l, *p, *x;
 	uint q;
+
+	*q0 = t->q0;
+	*q1 = t->q1;
+
+	if(mode){
+		lc = *q0 > 0    	? textreadc(t, *q0-1) : '\n';
+		rc = *q1 < t->file->b.nc	? textreadc(t, *q1) : '\n';
+		for(i=0; left[i]; i++){
+			l = left[i];
+			r = right[i];
+			x = runestrchr(l, lc);
+			if(x && r[x-l] == rc){
+				(*q0) -= lc != '\n';
+				(*q1)++;
+				return;
+			}
+		}
+	}
 
 	if(textclickhtmlmatch(t, q0, q1))
 		return;
