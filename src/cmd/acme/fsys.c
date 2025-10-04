@@ -88,6 +88,8 @@ Dirtab dirtabw[]=
 	{ "errors",		QTFILE,		QWerrors,		0200 },
 	{ "event",		QTFILE,		QWevent,		0600 },
 	{ "indent",		QTFILE,		QWindent,		0600 },
+	{ "rdmenu",		QTFILE,		QWrdmenu,		0400 },
+	{ "wrmenu",		QTFILE,		QWwrmenu,		0200 },
 	{ "rdsel",		QTFILE,		QWrdsel,		0400 },
 	{ "wrsel",		QTFILE,		QWwrsel,		0200 },
 	{ "tag",		QTAPPEND,	QWtag,		0600|DMAPPEND },

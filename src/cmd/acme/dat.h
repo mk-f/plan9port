@@ -19,6 +19,8 @@ enum
 	QWerrors,
 	QWevent,
 	QWindent,
+	QWrdmenu,
+	QWwrmenu,
 	QWrdsel,
 	QWwrsel,
 	QWtag,
@@ -250,6 +252,7 @@ struct Window
 	uchar	dirty;
 	uchar	indent[NINDENT];
 	uchar	showdel;
+	Menu 	menu;
 	int		id;
 	Range	addr;
 	Range	limit;
@@ -565,6 +568,8 @@ extern int			messagesize;		/* negotiated in 9P version setup */
 extern int			globalautoindent;
 extern int			dodollarsigns;
 extern char*		mtpt;
+
+extern int			globalindent[NINDENT];
 
 enum
 {
