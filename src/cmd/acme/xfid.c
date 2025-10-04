@@ -285,6 +285,42 @@ xfidclose(Xfid *x)
 	respond(x, &fc, nil);
 }
 
+char *
+xfidrdmenu(Xfid *x, Window *w)
+{
+	char **m, *b, *p;
+	int l;
+
+	if(w->menu.item){
+		l = 0;
+		m = w->menu.item;
+		while(*m != nil) {
+			l += strlen(*m) + 1;
+			m++;
+		}
+
+		b = emalloc((l+1)*sizeof(*b));
+		b[l] = 0;
+
+		l = 0;
+		m = w->menu.item;
+		p = b;
+
+		while(*m != nil) {
+			l = strlen(*m);
+			strcpy(p, *m);
+			p[l] = '\n';
+			p += l+1;
+			m++;
+		}
+	} else {
+		b = emalloc(sizeof(*b));
+		b[0] = 0;
+	}
+
+	return b;
+}
+
 void
 xfidread(Xfid *x)
 {
@@ -340,6 +376,9 @@ xfidread(Xfid *x)
 
 	case QWindent:
 		b = winindentprint(w, buf);
+
+	case QWrdmenu:
+		b = xfidrdmenu(x, w);
 		goto Readb;
 
 	Readbuf:
@@ -445,6 +484,54 @@ fullrunewrite(Xfid *x, int *inr)
 	}
 	*inr = nr;
 	return r;
+}
+
+void
+xfidwrmenu(Xfid *x, Window *w)
+{
+	Fcall fc;
+	Rune *rs, *r;
+	char *c, *m, *p;
+	int nr, i, nl, l;
+
+	// could be replaced with a non-rune variant...
+	rs = fullrunewrite(x, &nr);
+	if(nr > 0){
+		nl = 0;
+		m = emalloc((nr * UTFmax + 1)*sizeof(*m));
+
+		c = m;
+		r = rs;
+		for(i=0; i<nr; i++){
+			l = runetochar(c, r++);
+			if(l == 1 && *c == '\n')
+				nl++;
+			c += l;
+		}
+		*c++ = 0;
+
+		if(nl > 0) {
+			w->menu.item = emalloc((nl+1)*sizeof(*(w->menu.item)));
+			c = m;
+			for(i=0; i<nl; i++){
+				if(p = strchr(c, '\n')) {
+					*p = 0;
+					w->menu.item[i] = emalloc((strlen(c)+1)*sizeof(**(w->menu.item)));
+					strcpy(w->menu.item[i], c);
+					c = p + 1;
+				}
+			}
+			if(*c)
+				warning(nil, "menu entry without terminating newline: %s\n", c);
+
+			w->menu.item[nl] = nil;
+		}
+
+		free(m);
+	}
+	free(rs);
+	fc.count = x->fcall.count;
+	respond(x, &fc, nil);
 }
 
 void
@@ -576,6 +663,10 @@ xfidwrite(Xfid *x)
 
 	case QWevent:
 		xfideventwrite(x, w);
+		break;
+
+	case QWwrmenu:
+		xfidwrmenu(x, w);
 		break;
 
 	case QWtag:
