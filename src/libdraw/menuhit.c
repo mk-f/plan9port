@@ -275,3 +275,27 @@ menuhit(int but, Mousectl *mc, Menu *menu, Screen *scr)
 	}
 	return -1;
 }
+
+void
+acme_menucolors(void)
+{
+	/* Main tone is greenish, with negative selection */
+	back = allocimagemix(display, DPalebluegreen, DWhite);
+	high = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
+	bord = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
+	if(back==nil || high==nil || bord==nil)
+		goto Error;
+	text = display->black;
+	htext = display->black;
+	return;
+
+    Error:
+	freeimage(back);
+	freeimage(high);
+	freeimage(bord);
+	back = display->white;
+	high = display->black;
+	bord = display->black;
+	text = display->black;
+	htext = display->white;
+}
