@@ -15,6 +15,9 @@
 	#include <bio.h>
 	#include "edit.h"
 
+extern 	void acme_menucolors();
+
+
 void	mousethread(void*);
 void	keyboardthread(void*);
 void	waitthread(void*);
@@ -270,7 +273,7 @@ threadmain(int argc, char *argv[])
 			}
 	}
 	flushimage(display, 1);
-
+	acme_menucolors();
 	acmeerrorinit();
 	threadcreate(keyboardthread, nil, STACK);
 	threadcreate(mousethread, nil, STACK);
