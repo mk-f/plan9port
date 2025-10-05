@@ -1826,3 +1826,45 @@ run(Window *win, char *s, Rune *rdir, int ndir, int newns, char *argaddr, char *
 	arg[1] = cpid;
 	threadcreate(runwaittask, arg, STACK);
 }
+
+void
+run_menu(Text *t, int hit) {
+	char *cmd;
+	Rune *r, *s;
+	long rl;
+	int n;
+	Runestr dir;
+	Exectab *e;
+
+	cmd = emalloc(strlen(t->w->menu.item[hit])+1);
+	sprint(cmd, "%s", t->w->menu.item[hit]);
+
+	r = runesmprint("%s", cmd);
+	rl = runestrlen(r);
+	e = lookup(r, rl);
+
+	if(e){
+		if(e->mark && seltext!=nil)
+		if(seltext->what == Body){
+			seq++;
+			filemark(seltext->w->body.file);
+		}
+		s = skipbl(r, rl, &n);
+		s = findbl(s, n, &n);
+		s = skipbl(s, n, &n);
+		(*e->fn)(t, seltext, nil, e->flag1, e->flag2, s, n);
+		free(r);
+		return;
+	}
+
+	free(r);
+	dir = dirname(t, nil, 0);
+	if(dir.nr==1 && dir.r[0]=='.'){	/* sigh */
+		free(dir.r);
+		dir.r = nil;
+		dir.nr = 0;
+	}
+	if(t->w)
+		incref(&t->w->ref);
+	run(t->w, cmd, dir.r, dir.nr, TRUE, nil, nil, FALSE);
+}
