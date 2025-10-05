@@ -518,8 +518,6 @@ mousethread(void *v)
 {
 	Text *t, *argt;
 	int but, menu;
-	Runestr dir;
-	char *cmd;
 	uint q0, q1;
 	Window *w;
 	Plumbmsg *pm;
@@ -680,19 +678,8 @@ mousethread(void *v)
 						warning(nil, "no menu for window\n");
 					}else{
 						menu = menuhit(7, mousectl, &w->menu, nil);
-						if(menu != -1){
-							dir = dirname(t, nil, 0);
-							if(dir.nr==1 && dir.r[0]=='.'){	/* sigh */
-								free(dir.r);
-								dir.r = nil;
-								dir.nr = 0;
-							}
-							cmd = emalloc(strlen(w->menu.item[menu])+1);
-							sprint(cmd, "%s", w->menu.item[menu]);
-							if(t->w)
-								incref(&t->w->ref);
-							run(t->w, cmd, dir.r, dir.nr, TRUE, nil, nil, FALSE);
-						}
+						if(menu != -1)
+							run_menu(t, menu);
 					}
 				}
 				if(w)

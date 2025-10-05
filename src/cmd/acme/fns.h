@@ -34,6 +34,7 @@ Window*	errorwin(Mntdir*, int);
 Window*	errorwinforwin(Window*);
 Runestr cleanrname(Runestr);
 void	run(Window*, char*, Rune*, int, int, char*, char*, int);
+void	run_menu(Text*, int);
 void fsysclose(void);
 void	setcurtext(Text*, int);
 int	isfilec(Rune);
