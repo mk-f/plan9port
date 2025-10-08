@@ -17,6 +17,7 @@ OFILES=\
 	fsys.$O\
 	logf.$O\
 	look.$O\
+	menuhit.$O\
 	regx.$O\
 	rows.$O\
 	scrl.$O\
