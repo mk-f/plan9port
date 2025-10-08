@@ -273,7 +273,6 @@ threadmain(int argc, char *argv[])
 			}
 	}
 	flushimage(display, 1);
-	acme_menucolors();
 	acmeerrorinit();
 	threadcreate(keyboardthread, nil, STACK);
 	threadcreate(mousethread, nil, STACK);
@@ -517,11 +516,12 @@ void
 mousethread(void *v)
 {
 	Text *t, *argt;
-	int but, menu;
+	int but, menu, buts;
 	uint q0, q1;
 	Window *w;
 	Plumbmsg *pm;
 	Mouse m;
+	Mousectl *mctl;
 	char *act;
 	enum { MResize, MMouse, MPlumb, MWarnings, NMALT };
 	enum { Shift = 5 };
@@ -666,21 +666,28 @@ mousethread(void *v)
 					if(t->w!=nil && t==&t->w->body)
 						activewin = t->w;
 				}else if(m.buttons & 2){
-					if(textselect2(t, &q0, &q1, &argt))
-						execute(t, q0, q1, FALSE, argt);
+					if(t->what == Tag) {
+						if(textselect2(t, &q0, &q1, &argt))
+							execute(t, q0, q1, FALSE, argt);
+					}else{
+						if(!w->menu.item){
+							warning(nil, "no menu for window\n");
+						}else{
+							mctl = mousectl;
+							menu = acme_menuhit(2, mctl, &w->menu, &buts);
+							print("buts: %d\n", buts);
+							if(menu != -1 && buts != 7)
+								if(buts == 3)
+									run_menu(t, menu, argtext);
+								else
+									run_menu(t, menu, nil);
+						}
+					}
 				}else if(m.buttons & (4|(4<<Shift))){
 					if(textselect3(t, &q0, &q1))
 						look3(t, q0, q1, FALSE, (m.buttons&(4<<Shift))!=0);
 				}else if((m.buttons & (2<<Shift)) && w){
-					// 7 because menuhit wants the number of the button and not the bit-pattern:
-					// while(mc->m.buttons & (1<<(but-1)))
-					if(!w->menu.item){
-						warning(nil, "no menu for window\n");
-					}else{
-						menu = menuhit(7, mousectl, &w->menu, nil);
-						if(menu != -1)
-							run_menu(t, menu);
-					}
+					/* nothing */
 				}
 				if(w)
 					winunlock(w);

@@ -1828,8 +1828,8 @@ run(Window *win, char *s, Rune *rdir, int ndir, int newns, char *argaddr, char *
 }
 
 void
-run_menu(Text *t, int hit) {
-	char *cmd;
+run_menu(Text *t, int hit, Text *argt) {
+	char *cmd, *a, *aa;
 	Rune *r, *s;
 	long rl;
 	int n;
@@ -1852,7 +1852,7 @@ run_menu(Text *t, int hit) {
 		s = skipbl(r, rl, &n);
 		s = findbl(s, n, &n);
 		s = skipbl(s, n, &n);
-		(*e->fn)(t, seltext, nil, e->flag1, e->flag2, s, n);
+		(*e->fn)(t, seltext, argt, e->flag1, e->flag2, s, n);
 		free(r);
 		return;
 	}
@@ -1864,7 +1864,8 @@ run_menu(Text *t, int hit) {
 		dir.r = nil;
 		dir.nr = 0;
 	}
+	aa = getbytearg(argt, TRUE, TRUE, &a);
 	if(t->w)
 		incref(&t->w->ref);
-	run(t->w, cmd, dir.r, dir.nr, TRUE, nil, nil, FALSE);
+	run(t->w, cmd, dir.r, dir.nr, TRUE, aa, a, FALSE);
 }
