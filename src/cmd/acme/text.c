@@ -805,6 +805,10 @@ texttype(Text *t, Rune r)
 		typecommit(t);
 		put(t, t, nil, TRUE, FALSE, nil, 0);
 		return;
+	case 0x10:  /* ^P:  */
+		acme_prompt(mousectl, keyboardctl);
+		typecommit(t);
+		return;
 	Tagdown:
 		/* expand tag to show all text */
 		if(!t->w->tagexpand){
