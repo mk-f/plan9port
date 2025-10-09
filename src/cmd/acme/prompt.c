@@ -82,10 +82,10 @@ acme_prompt(Keyboardctl *kbc, char **res)
 	Image *b, *backup;
 	Point pt;
 	Rune rn;
-	int t, end;
-	int p0, p1;
+	int t, lt, end;
 	Frame *fr;
-	Rune *rbuf = emalloc(sizeof(*rbuf) * prompt_max);
+	Rune rbuf[prompt_max];
+
 	// for reasons unknown, Frame does not work correctly when
 	// not setting up with malloc but using Frame fr;
 	fr = emalloc(sizeof(*fr));
@@ -120,14 +120,15 @@ acme_prompt(Keyboardctl *kbc, char **res)
 
 	/* and a border */
 	border(b, menur, Blackborder, cols[BORD], ZP);
+	frinit(fr, textr, font, b, cols);
+	frtick(fr, frptofchar(fr, 0), 1);	/* remove last tick */
 	flushimage(display, 1);
 
-	frinit(fr, textr, font, b, cols);
 	end = 0;
 	t = 0; /* tick pos */
 	/* this just works in the keyboard-thread! Blocking! */
 	while(recv(kbc->c, &rn)) {
-		print("%02x\n", rn);
+		frtick(fr, frptofchar(fr, t), 0);	/* remove last tick */
 		switch(rn) {
 			case '\n':
 				goto out;
@@ -141,16 +142,18 @@ acme_prompt(Keyboardctl *kbc, char **res)
 				t--;
 				break;
 			case 0xf011:		/* left */
-				if(t > 0){
-					frtick(fr, frptofchar(fr, t--), 0);
-					frtick(fr, frptofchar(fr, t), 1);
-				}
+				if(t > 0)
+					t--;
 				break;
 			case 0xf012:		/* right */
-				if(t < end){
-					frtick(fr, frptofchar(fr, t++), 0);
-					frtick(fr, frptofchar(fr, t), 1);
-				}
+				if(t < end)
+					t++;
+				break;
+			case 0x01:			/* ^A: beginning of line */
+				t = 0;
+				break;
+			case 0x05:			/* ^E: end of line */
+				t = end;
 				break;
 			default:
 				if(end == prompt_max)
@@ -158,19 +161,17 @@ acme_prompt(Keyboardctl *kbc, char **res)
 				if(t < end)
 					memmove(rbuf+t+1,rbuf+t,(end-t)*sizeof(*rbuf));
 				rbuf[t] = rn;
-
-				frtick(fr, frptofchar(fr, t), 0);
 				frinsert(fr, rbuf+t, rbuf+t+1, t);
-				// frinsert unhelpfully puts a tick at the end of the frame
-				frtick(fr, frptofchar(fr, end+1), 0);
+
 				end++;
 				t++;
-				frtick(fr, frptofchar(fr, t), 1);
-
 				break;
 		}
-		print("t: %d, end: %d\n", t, end);
-		pd(rbuf, end);
+
+		/* frinsert/frdelete put tick and end of frame */
+		frtick(fr, frptofchar(fr, end), 0);
+		frtick(fr, frptofchar(fr, t), 1);
+
 		flushimage(display, 1);
 	}
 out:
@@ -180,7 +181,6 @@ out:
 	(*res)[idx] = 0;
 	*/
 	free(fr);
-	free(rbuf);
 	if(b != screen)
 		freeimage(b);
 	if(backup){
