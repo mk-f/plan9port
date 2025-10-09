@@ -4,6 +4,10 @@
 #include <thread.h>
 #include <mouse.h>
 #include <keyboard.h>
+#include <libString.h>
+#include <frame.h>
+
+#define prompt_max 256
 
 enum
 {
@@ -17,45 +21,75 @@ enum
 	Gap = 4			/* between text and scroll bar */
 };
 
-static	Image	*back;
-static	Image	*high;
-static	Image	*bord;
-static	Image	*text;
-static	Image	*htext;
+static	Image	*cols[NCOL];
+
 static
+void
+error(char *s)
+{
+	fprint(2, "prompt: %s: %r\n", s);
+	threadexitsall(nil);
+}
+
+static
+void*
+emalloc(uint n)
+{
+	void *p;
+
+	p = malloc(n);
+	if(p == nil)
+		error("malloc failed");
+	setmalloctag(p, getcallerpc(&n));
+	memset(p, 0, n);
+	return p;
+}
+
+
 void
 menucolors(void)
 {
-	back = allocimagemix(display, DPalebluegreen, DWhite);
-	high = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
-	bord = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
-	if(back==nil || high==nil || bord==nil)
+	cols[BACK] = allocimagemix(display, DPalebluegreen, DWhite);
+	cols[HIGH] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPalegreygreen);
+	cols[BORD] = allocimage(display, Rect(0,0,1,1), screen->chan, 1, DPurpleblue);
+	if(cols[BACK]==nil || cols[HIGH]==nil || cols[BORD]==nil)
 		goto Error;
-	text = display->black;
-	htext = display->black;
+	cols[TEXT] = display->black;
+	cols[HTEXT] = display->black;
 	return;
 
     Error:
-	freeimage(back);
-	freeimage(high);
-	freeimage(bord);
-	back = display->white;
-	high = display->black;
-	bord = display->black;
-	text = display->black;
-	htext = display->white;
+    print("ERROR IN MENUCOLORS\n");
+	freeimage(cols[BACK]);
+	freeimage(cols[HIGH]);
+	freeimage(cols[BORD]);
+	cols[BACK] = display->white;
+	cols[HIGH] = display->black;
+	cols[BORD] = display->black;
+	cols[TEXT] = display->black;
+	cols[HTEXT] = display->white;
+}
+void pd(Rune *r, int n){
+		for(int i = 0; i < n; i++)
+			print("%C", r[i]);
+		print("\n");
 }
 
 int
-acme_prompt(Mousectl *mc, Keyboardctl *kbc)
+acme_prompt(Keyboardctl *kbc, char **res)
 {
 	Rectangle r, menur, sc, textr;
 	Image *b, *backup;
-	Point pt, tpt;
+	Point pt;
 	Rune rn;
-	char *c;
-
-	if(back == nil)
+	int t, end;
+	int p0, p1;
+	Frame *fr;
+	Rune *rbuf = emalloc(sizeof(*rbuf) * prompt_max);
+	// for reasons unknown, Frame does not work correctly when
+	// not setting up with malloc but using Frame fr;
+	fr = emalloc(sizeof(*fr));
+	if(cols[BACK] == nil)
 		menucolors();
 
 	sc = screen->clipr;
@@ -82,24 +116,71 @@ acme_prompt(Mousectl *mc, Keyboardctl *kbc)
 		draw(backup, menur, screen, nil, menur.min);
 
 	/* now draw the menu onto the screen */
-	draw(b, menur, back, nil, ZP);
+	draw(b, menur, cols[BACK], nil, ZP);
 
 	/* and a border */
-	border(b, menur, Blackborder, bord, ZP);
-
-	tpt = string(b, pt, text, pt, font, "");
+	border(b, menur, Blackborder, cols[BORD], ZP);
 	flushimage(display, 1);
 
+	frinit(fr, textr, font, b, cols);
+	end = 0;
+	t = 0; /* tick pos */
 	/* this just works in the keyboard-thread! Blocking! */
 	while(recv(kbc->c, &rn)) {
-		print("%C\n", rn);
-		c = smprint("%C", rn);
-		tpt = string(b, tpt, text, tpt, font, c);
-		flushimage(display, 1);
-		if(rn == 'c')
-			break;
-	}
+		print("%02x\n", rn);
+		switch(rn) {
+			case '\n':
+				goto out;
+			case 0x08:		/* backspace */
+				if(t == 0)
+					continue;
+				if(t < end)
+					memmove(rbuf+t-1,rbuf+t,(end-t)*sizeof(*rbuf));
+				frdelete(fr, t-1, t);
+				end--;
+				t--;
+				break;
+			case 0xf011:		/* left */
+				if(t > 0){
+					frtick(fr, frptofchar(fr, t--), 0);
+					frtick(fr, frptofchar(fr, t), 1);
+				}
+				break;
+			case 0xf012:		/* right */
+				if(t < end){
+					frtick(fr, frptofchar(fr, t++), 0);
+					frtick(fr, frptofchar(fr, t), 1);
+				}
+				break;
+			default:
+				if(end == prompt_max)
+					continue;
+				if(t < end)
+					memmove(rbuf+t+1,rbuf+t,(end-t)*sizeof(*rbuf));
+				rbuf[t] = rn;
 
+				frtick(fr, frptofchar(fr, t), 0);
+				frinsert(fr, rbuf+t, rbuf+t+1, t);
+				// frinsert unhelpfully puts a tick at the end of the frame
+				frtick(fr, frptofchar(fr, end+1), 0);
+				end++;
+				t++;
+				frtick(fr, frptofchar(fr, t), 1);
+
+				break;
+		}
+		print("t: %d, end: %d\n", t, end);
+		pd(rbuf, end);
+		flushimage(display, 1);
+	}
+out:
+	/*
+	*res = emalloc(idx+1);
+	memcpy(*res, buf, idx);
+	(*res)[idx] = 0;
+	*/
+	free(fr);
+	free(rbuf);
 	if(b != screen)
 		freeimage(b);
 	if(backup){
