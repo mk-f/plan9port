@@ -15,9 +15,6 @@
 	#include <bio.h>
 	#include "edit.h"
 
-extern 	void acme_menucolors();
-
-
 void	mousethread(void*);
 void	keyboardthread(void*);
 void	waitthread(void*);
@@ -34,6 +31,9 @@ int		snarffd = -1;
 int		mainpid;
 int		swapscrollbuttons = FALSE;
 char		*mtpt;
+
+QLock	promptlk;
+
 
 enum{
 	NSnarf = 1000	/* less than 1024, I/O buffer size */
@@ -522,6 +522,7 @@ mousethread(void *v)
 	Plumbmsg *pm;
 	Mouse m;
 	Mousectl *mctl;
+	Keyboardctl *kbctl;
 	char *act;
 	enum { MResize, MMouse, MPlumb, MWarnings, NMALT };
 	enum { Shift = 5 };
@@ -666,7 +667,7 @@ mousethread(void *v)
 					if(t->w!=nil && t==&t->w->body)
 						activewin = t->w;
 				}else if(m.buttons & 2){
-					if(t->what == Tag) {
+					if(t->what != Body) {
 						if(textselect2(t, &q0, &q1, &argt))
 							execute(t, q0, q1, FALSE, argt);
 					}else{
@@ -675,7 +676,6 @@ mousethread(void *v)
 						}else{
 							mctl = mousectl;
 							menu = acme_menuhit(2, mctl, &w->menu, &buts);
-							print("buts: %d\n", buts);
 							if(menu != -1 && buts != 7)
 								if(buts == 3)
 									run_menu(t, menu, argtext);
@@ -687,7 +687,10 @@ mousethread(void *v)
 					if(textselect3(t, &q0, &q1))
 						look3(t, q0, q1, FALSE, (m.buttons&(4<<Shift))!=0);
 				}else if((m.buttons & (2<<Shift)) && w){
-					/* nothing */
+					mctl = mousectl;
+					kbctl = keyboardctl;
+					fprint(2, "DEBUG: x:%d, y:%d\n", Dx(t->w->body.all), 4);
+					menu = acme_prompt(mctl, kbctl);
 				}
 				if(w)
 					winunlock(w);
