@@ -76,15 +76,16 @@ void pd(Rune *r, int n){
 }
 
 int
-acme_prompt(Keyboardctl *kbc, char **res)
+acme_prompt(Keyboardctl *kbc, Rune **buf, ulong nrbuf)
 {
 	Rectangle r, menur, sc, textr;
 	Image *b, *backup;
 	Point pt;
-	Rune rn;
+	Rune rn, *rbuf;
 	int t, lt, end;
 	Frame *fr;
-	Rune rbuf[prompt_max];
+
+	rbuf = *buf;
 
 	// for reasons unknown, Frame does not work correctly when
 	// not setting up with malloc but using Frame fr;
@@ -156,7 +157,7 @@ acme_prompt(Keyboardctl *kbc, char **res)
 				t = end;
 				break;
 			default:
-				if(end == prompt_max)
+				if(end == nrbuf - 1)
 					continue;
 				if(t < end)
 					memmove(rbuf+t+1,rbuf+t,(end-t)*sizeof(*rbuf));
@@ -175,6 +176,7 @@ acme_prompt(Keyboardctl *kbc, char **res)
 		flushimage(display, 1);
 	}
 out:
+	rbuf[end] = 0;
 	/*
 	*res = emalloc(idx+1);
 	memcpy(*res, buf, idx);

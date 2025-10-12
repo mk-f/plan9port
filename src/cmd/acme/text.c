@@ -694,9 +694,8 @@ texttype(Text *t, Rune r)
 	uint q0, q1;
 	int nnb, nb, n, i;
 	int nr;
-	Rune *rp;
+	Rune *rp, *prompt;
 	Text *u;
-	char *prompt;
 
 	if(t->what!=Body && t->what!=Tag && r=='\n')
 		return;
@@ -807,9 +806,12 @@ texttype(Text *t, Rune r)
 		put(t, t, nil, TRUE, FALSE, nil, 0);
 		return;
 	case 0x10:  /* ^P:  */
-		acme_prompt(keyboardctl, &prompt);
-		//print("prompt: %s\n", prompt);
-		//free(prompt);
+		typecommit(t);
+		prompt = emalloc(sizeof(*prompt)*10);
+		acme_prompt(keyboardctl, &prompt, 10);
+		print("prompt: %S\n", prompt);
+		run_cmd(prompt, t, nil);
+		free(prompt);
 		return;
 	Tagdown:
 		/* expand tag to show all text */
