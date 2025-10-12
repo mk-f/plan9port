@@ -17,6 +17,8 @@ Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
 static Rune Ldot[] = { '.', 0 };
 
+#define max_prompt 256
+
 enum{
 	TABDIR = 3	/* width of tabs in directory windows */
 };
@@ -694,7 +696,7 @@ texttype(Text *t, Rune r)
 	uint q0, q1;
 	int nnb, nb, n, i;
 	int nr;
-	Rune *rp, *prompt;
+	Rune *rp, *prompt, *tmp;
 	Text *u;
 
 	if(t->what!=Body && t->what!=Tag && r=='\n')
@@ -807,9 +809,13 @@ texttype(Text *t, Rune r)
 		return;
 	case 0x10:  /* ^P:  */
 		typecommit(t);
-		prompt = emalloc(sizeof(*prompt)*10);
-		acme_prompt(keyboardctl, &prompt, 10);
-		print("prompt: %S\n", prompt);
+		prompt = emalloc(sizeof(*prompt)*max_prompt);
+		acme_prompt(keyboardctl, &prompt, max_prompt);
+		if(prompt[0] == ':'){
+			tmp = runesmprint("Edit %S", prompt + 1);
+			free(prompt);
+			prompt = tmp;
+		}
 		run_cmd(prompt, t, nil);
 		free(prompt);
 		return;
