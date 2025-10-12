@@ -78,11 +78,11 @@ void pd(Rune *r, int n){
 int
 acme_prompt(Keyboardctl *kbc, Rune **buf, ulong nrbuf)
 {
-	Rectangle r, menur, sc, textr;
+	Rectangle r, promptr, sc, textr;
 	Image *b, *backup;
 	Point pt;
 	Rune rn, *rbuf;
-	int t, lt, end;
+	int t, width, end;
 	Frame *fr;
 
 	rbuf = *buf;
@@ -96,33 +96,33 @@ acme_prompt(Keyboardctl *kbc, Rune **buf, ulong nrbuf)
 	sc = screen->clipr;
 
 	replclipr(screen, 0, screen->r);
+	width = 400;
+	r = insetrect(Rect(0, 0, width, font->height+Vspacing), -Margin);
 
-	r = insetrect(Rect(0, 0, 200, font->height+Vspacing), -Margin);
-
-	pt.x = Dx(screen->r)/2;
+	pt.x = Dx(screen->r)/2-width/2;
 	pt.y = Dy(screen->r)/2;
 
-	menur = rectaddpt(r, pt);
+	promptr = rectaddpt(r, pt);
 
-	textr.max.x = menur.max.x-Margin;
-	textr.min.x = textr.max.x-200;
-	textr.min.y = menur.min.y+Margin;
+	textr.max.x = promptr.max.x-Margin;
+	textr.min.x = textr.max.x-width;
+	textr.min.y = promptr.min.y+Margin;
 	textr.max.y = textr.min.y + 1*(font->height+Vspacing);
 
 	b = screen;
 
 	/* backup current content befor drawing over it */
-	backup = allocimage(display, menur, screen->chan, 0, -1);
+	backup = allocimage(display, promptr, screen->chan, 0, -1);
 	if(backup)
-		draw(backup, menur, screen, nil, menur.min);
+		draw(backup, promptr, screen, nil, promptr.min);
 
 	/* now draw the menu onto the screen */
-	draw(b, menur, cols[BACK], nil, ZP);
+	draw(b, promptr, cols[BACK], nil, ZP);
 
 	/* and a border */
-	border(b, menur, Blackborder, cols[BORD], ZP);
+	border(b, promptr, Blackborder, cols[BORD], ZP);
 	frinit(fr, textr, font, b, cols);
-	frtick(fr, frptofchar(fr, 0), 1);	/* remove last tick */
+	frtick(fr, frptofchar(fr, 0), 1);
 	flushimage(display, 1);
 
 	end = 0;
@@ -186,7 +186,7 @@ out:
 	if(b != screen)
 		freeimage(b);
 	if(backup){
-		draw(screen, menur, backup, nil, menur.min);
+		draw(screen, promptr, backup, nil, promptr.min);
 		freeimage(backup);
 	}
 	replclipr(screen, 0, sc);
