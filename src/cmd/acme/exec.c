@@ -1828,18 +1828,14 @@ run(Window *win, char *s, Rune *rdir, int ndir, int newns, char *argaddr, char *
 }
 
 void
-run_menu(Text *t, int hit, Text *argt) {
-	char *cmd, *a, *aa;
-	Rune *r, *s;
+run_cmd(Rune *r, Text *t, Text *argt) {
+	char *a, *aa;
+	Rune *s;
 	long rl;
 	int n;
 	Runestr dir;
 	Exectab *e;
 
-	cmd = emalloc(strlen(t->w->menu.item[hit])+1);
-	sprint(cmd, "%s", t->w->menu.item[hit]);
-
-	r = runesmprint("%s", cmd);
 	rl = runestrlen(r);
 	e = lookup(r, rl);
 
@@ -1853,11 +1849,9 @@ run_menu(Text *t, int hit, Text *argt) {
 		s = findbl(s, n, &n);
 		s = skipbl(s, n, &n);
 		(*e->fn)(t, seltext, argt, e->flag1, e->flag2, s, n);
-		free(r);
 		return;
 	}
 
-	free(r);
 	dir = dirname(t, nil, 0);
 	if(dir.nr==1 && dir.r[0]=='.'){	/* sigh */
 		free(dir.r);
@@ -1867,5 +1861,6 @@ run_menu(Text *t, int hit, Text *argt) {
 	aa = getbytearg(argt, TRUE, TRUE, &a);
 	if(t->w)
 		incref(&t->w->ref);
-	run(t->w, cmd, dir.r, dir.nr, TRUE, aa, a, FALSE);
+	/* second argument is free'd in waitthread or procwaitthread */
+	run(t->w, runetobyte(r, rl), dir.r, dir.nr, TRUE, aa, a, FALSE);
 }

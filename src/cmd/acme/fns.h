@@ -34,7 +34,7 @@ Window*	errorwin(Mntdir*, int);
 Window*	errorwinforwin(Window*);
 Runestr cleanrname(Runestr);
 void	run(Window*, char*, Rune*, int, int, char*, char*, int);
-void	run_menu(Text*, int, Text*);
+void	run_cmd(Rune*, Text*, Text*);
 void fsysclose(void);
 void	setcurtext(Text*, int);
 int	isfilec(Rune);
@@ -109,4 +109,4 @@ Range range(int, int);
 
 int	ismtpt(char*);
 int acme_menuhit(int, Mousectl*, Menu*, int*);
-int acme_prompt(Keyboardctl*, char**);
+int acme_prompt(Keyboardctl*, Rune**, ulong);
