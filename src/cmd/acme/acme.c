@@ -516,16 +516,16 @@ void
 mousethread(void *v)
 {
 	Text *t, *argt;
-	int but, menu, buts;
+	int but, hit, buts;
 	uint q0, q1;
 	Window *w;
 	Plumbmsg *pm;
 	Mouse m;
 	Mousectl *mctl;
-	Keyboardctl *kbctl;
 	char *act;
 	enum { MResize, MMouse, MPlumb, MWarnings, NMALT };
 	enum { Shift = 5 };
+	Rune *cmd;
 	static Alt alts[NMALT+1];
 
 	USED(v);
@@ -675,22 +675,22 @@ mousethread(void *v)
 							warning(nil, "no menu for window\n");
 						}else{
 							mctl = mousectl;
-							menu = acme_menuhit(2, mctl, &w->menu, &buts);
-							if(menu != -1 && buts != 7)
+							hit = acme_menuhit(2, mctl, &w->menu, &buts);
+							if(hit != -1 && buts != 7){
+								cmd = runesmprint("%s", t->w->menu.item[hit]);
 								if(buts == 3)
-									run_menu(t, menu, argtext);
+									run_cmd(cmd, t, argtext);
 								else
-									run_menu(t, menu, nil);
+									run_cmd(cmd, t, nil);
+								free(cmd);
+							}
 						}
 					}
 				}else if(m.buttons & (4|(4<<Shift))){
 					if(textselect3(t, &q0, &q1))
 						look3(t, q0, q1, FALSE, (m.buttons&(4<<Shift))!=0);
 				}else if((m.buttons & (2<<Shift)) && w){
-					mctl = mousectl;
-					kbctl = keyboardctl;
-					fprint(2, "DEBUG: x:%d, y:%d\n", Dx(t->w->body.all), 4);
-					menu = acme_prompt(mctl, kbctl);
+					/* nothing */
 				}
 				if(w)
 					winunlock(w);
