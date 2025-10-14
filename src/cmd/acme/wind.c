@@ -28,7 +28,7 @@ wininit(Window *w, Window *clone, Rectangle r)
 	w->tagexpand = TRUE;
 	w->body.w = w;
 	w->id = ++winid;
-	w->menu.item = nil;
+	mminit(w);
 	incref(&w->ref);
 	if(globalincref)
 		incref(&w->ref);
