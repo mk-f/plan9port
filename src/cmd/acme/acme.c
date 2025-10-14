@@ -671,13 +671,14 @@ mousethread(void *v)
 						if(textselect2(t, &q0, &q1, &argt))
 							execute(t, q0, q1, FALSE, argt);
 					}else{
-						if(!w->menu.item){
+						mmupdate(w);
+						if(!w->mmenu.menu.item){
 							warning(nil, "no menu for window\n");
 						}else{
 							mctl = mousectl;
-							hit = acme_menuhit(2, mctl, &w->menu, &buts);
+							hit = acme_menuhit(2, mctl, &w->mmenu.menu, &buts);
 							if(hit != -1 && buts != 7){
-								cmd = runesmprint("%s", t->w->menu.item[hit]);
+								cmd = runesmprint("%s", t->w->mmenu.menu.item[hit]);
 								if(buts == 3)
 									run_cmd(cmd, t, argtext);
 								else

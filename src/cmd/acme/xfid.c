@@ -492,6 +492,7 @@ xfidwrmenu(Xfid *x, Window *w)
 	Fcall fc;
 	Rune *rs, *r;
 	char *c, *m, *p;
+	char **items;
 	int nr, i, nl, l;
 
 	// could be replaced with a non-rune variant...
@@ -511,20 +512,19 @@ xfidwrmenu(Xfid *x, Window *w)
 		*c++ = 0;
 
 		if(nl > 0) {
-			w->menu.item = emalloc((nl+1)*sizeof(*(w->menu.item)));
+			items = emalloc(nl*sizeof(*items));
 			c = m;
 			for(i=0; i<nl; i++){
 				if(p = strchr(c, '\n')) {
 					*p = 0;
-					w->menu.item[i] = emalloc((strlen(c)+1)*sizeof(**(w->menu.item)));
-					strcpy(w->menu.item[i], c);
+					items[i] = smprint("%s", c);
 					c = p + 1;
 				}
 			}
 			if(*c)
 				warning(nil, "menu entry without terminating newline: %s\n", c);
-
-			w->menu.item[nl] = nil;
+			mmuserfree(w);
+			mmuseritems(w, items, nl);
 		}
 
 		free(m);

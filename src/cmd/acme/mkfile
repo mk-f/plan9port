@@ -25,6 +25,7 @@ OFILES=\
 	text.$O\
 	time.$O\
 	util.$O\
+	widgets.$O\
 	wind.$O\
 	xfid.$O\
 	dat.$O\

@@ -59,6 +59,34 @@ typedef	struct	Timer Timer;
 typedef	struct	Window Window;
 typedef	struct	Xfid Xfid;
 
+typedef struct MMenu MMenu;
+enum
+{
+	MMDel,
+	MMSnarf,
+	MMUndo,
+	MMRedo,
+	MMGet,
+	MMPut,
+	MMLook,
+	MMRun,
+	MMUserStart,
+};
+struct MMenu {
+	u8int isys;
+	char **iuser;
+	uint niuser;
+	uint nimax;
+	uint udirty;
+	char **istore;
+	Menu menu;
+};
+
+void mminit(Window *);
+void mmupdate(Window *);
+void mmuserfree(Window *);
+void mmuseritems(Window *, char **, int);
+
 struct Runestr
 {
 	Rune	*r;
@@ -253,6 +281,7 @@ struct Window
 	uchar	indent[NINDENT];
 	uchar	showdel;
 	Menu 	menu;
+	MMenu 	mmenu;
 	int		id;
 	Range	addr;
 	Range	limit;
