@@ -78,14 +78,16 @@ struct MMenu {
 	uint niuser;
 	uint nimax;
 	uint udirty;
+	QLock lk;
 	char **istore;
 	Menu menu;
 };
 
 void mminit(Window *);
-void mmupdate(Window *);
+void mmsync(Window *);
 void mmuserfree(Window *);
-void mmuseritems(Window *, char **, int);
+void mmuserset(Window *, char **, int);
+char *mmuserget(Window *);
 
 struct Runestr
 {
