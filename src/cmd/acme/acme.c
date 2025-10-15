@@ -671,7 +671,7 @@ mousethread(void *v)
 						if(textselect2(t, &q0, &q1, &argt))
 							execute(t, q0, q1, FALSE, argt);
 					}else{
-						mmupdate(w);
+						mmsync(w);
 						if(!w->mmenu.menu.item){
 							warning(nil, "no menu for window\n");
 						}else{

@@ -37,6 +37,8 @@ void mminit(Window *w)
 	w->mmenu.niuser = 0;
 	w->mmenu.nimax = 15;
 	w->mmenu.udirty = 1;
+	w->mmenu.lk;
+	memset(&(w->mmenu.lk), 0, sizeof(w->mmenu.lk));
 	w->mmenu.istore =
 		emalloc(sizeof(*(w->mmenu.istore))*(w->mmenu.nimax+1));
 	w->mmenu.istore[MMUserStart] = nil;
@@ -47,7 +49,19 @@ void mmfree(Window *w)
 	mmuserfree(w);
 	free(w->mmenu.istore);
 }
-void mmupdate(Window *w)
+/* sync from isys and iuser to istore
+	Istore is a dynamic growing **char, the first 8 elements
+	are the system-menu area: every time the function
+	runs, it collects n system-menu items which need to be
+	shown. If the items changed since the last invocation
+	it references them from MMSystem into the last n items
+	of the system-area. This way menu.item can later be set to
+	istore+(8-n) without reallocation.
+	The remaining items of istore are the user-area which is set
+	to the items of iuser whenever udirty is set.
+	Iuser can be read and set via the file-system.
+*/
+void mmsync(Window *w)
 {
 	u8int isys;
 	char **isysstart;
@@ -75,9 +89,11 @@ void mmupdate(Window *w)
 		isys |= (1<<MMPut);
 	if(isys == w->mmenu.isys && !w->mmenu.udirty)
 		return;
+
 	n = nbset(isys);
 	ln = nbset(w->mmenu.isys);
 	isysstart = w->mmenu.istore + (MMUserStart-n);
+
 	if(isys != w->mmenu.isys){
 		/* last hit was in system area */
 		if(w->mmenu.menu.lasthit < ln && w->mmenu.menu.lasthit != -1){
@@ -102,10 +118,12 @@ void mmupdate(Window *w)
 				j++;
 			}
 		}
-		if(lh != -1) /* could not adjust (e.g after put, put is gone) */
+		if(lh != -1) /* last hit item is not in current set, can't adjust */
 			w->mmenu.menu.lasthit = MMSnarf;
 		w->mmenu.isys = isys;
 	}
+	/* update user-area */
+	qlock(&(w->mmenu.lk));
 	if(w->mmenu.udirty){
 		if(w->mmenu.niuser + MMUserStart + 1 > w->mmenu.nimax){
 			w->mmenu.nimax +=
@@ -122,8 +140,10 @@ void mmupdate(Window *w)
 		/* last hit was in user-area, don't try to adjust, set
 			to default */
 		if(w->mmenu.menu.lasthit >= ln)
-			w->mmenu.menu.lasthit = -1;
+			w->mmenu.menu.lasthit = MMSnarf;
 	}
+	qunlock(&(w->mmenu.lk));
+
 	w->mmenu.menu.item = isysstart;
 }
 void mmuserfree(Window *w)
@@ -135,9 +155,37 @@ void mmuserfree(Window *w)
 	w->mmenu.iuser = nil;
 	w->mmenu.niuser = 0;
 }
-void mmuseritems(Window *w, char **items, int n)
+void mmuserset(Window *w, char **items, int n)
 {
+	qlock(&(w->mmenu.lk));
 	w->mmenu.iuser = items;
 	w->mmenu.niuser = n;
 	w->mmenu.udirty = 1;
+	qunlock(&(w->mmenu.lk));
+}
+char *mmuserget(Window *w)
+{
+	int i, l;
+	char *b, *p;
+
+	qlock(&(w->mmenu.lk));
+	if(w->mmenu.niuser == 0){
+		qunlock(&(w->mmenu.lk));
+		return nil;
+	}
+
+	for(i=0,l=0;i<w->mmenu.niuser;i++)
+		l += strlen(w->mmenu.iuser[i])+1;
+	b = emalloc(sizeof(*b)*(l+1));
+
+	for(p=b,i=0;i<w->mmenu.niuser;i++){
+		l=strlen(w->mmenu.iuser[i]);
+		strcpy(p, w->mmenu.iuser[i]);
+		p[l] = '\n';
+		p += (l+1);
+	}
+	*p = 0;
+	qunlock(&(w->mmenu.lk));
+
+	return b;
 }

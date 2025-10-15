@@ -288,37 +288,7 @@ xfidclose(Xfid *x)
 char *
 xfidrdmenu(Xfid *x, Window *w)
 {
-	char **m, *b, *p;
-	int l;
-
-	if(w->menu.item){
-		l = 0;
-		m = w->menu.item;
-		while(*m != nil) {
-			l += strlen(*m) + 1;
-			m++;
-		}
-
-		b = emalloc((l+1)*sizeof(*b));
-		b[l] = 0;
-
-		l = 0;
-		m = w->menu.item;
-		p = b;
-
-		while(*m != nil) {
-			l = strlen(*m);
-			strcpy(p, *m);
-			p[l] = '\n';
-			p += l+1;
-			m++;
-		}
-	} else {
-		b = emalloc(sizeof(*b));
-		b[0] = 0;
-	}
-
-	return b;
+	return mmuserget(w);
 }
 
 void
@@ -379,6 +349,10 @@ xfidread(Xfid *x)
 
 	case QWrdmenu:
 		b = xfidrdmenu(x, w);
+		if(b == nil){
+			respond(x, &fc, "No user-menu data");
+			break;
+		}
 		goto Readb;
 
 	Readbuf:
@@ -524,7 +498,7 @@ xfidwrmenu(Xfid *x, Window *w)
 			if(*c)
 				warning(nil, "menu entry without terminating newline: %s\n", c);
 			mmuserfree(w);
-			mmuseritems(w, items, nl);
+			mmuserset(w, items, nl);
 		}
 
 		free(m);
