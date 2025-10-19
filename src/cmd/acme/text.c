@@ -810,7 +810,9 @@ texttype(Text *t, Rune r)
 	case 0x10:  /* ^P:  */
 		typecommit(t);
 		prompt = emalloc(sizeof(*prompt)*max_prompt);
-		acme_prompt(keyboardctl, &prompt, max_prompt);
+		acme_prompt(keyboardctl, &prompt, max_prompt,
+			addpt(t->w->body.fr.r.min, Pt(Dx(t->w->body.fr.r)/4, Dy(t->w->body.fr.r)/2)),
+			Dx(t->w->body.fr.r)/2);
 		if(prompt[0] == ':'){
 			tmp = runesmprint("Edit %S", prompt + 1);
 			free(prompt);
