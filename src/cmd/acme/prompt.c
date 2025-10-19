@@ -21,6 +21,16 @@ enum
 	Gap = 4			/* between text and scroll bar */
 };
 
+typedef struct Prompt Prompt;
+struct Prompt {
+	Rectangle r;
+	Image *backup;
+	Image *prompt;
+	Frame *frame;
+	int lines;
+	int width;
+};
+
 static	Image	*cols[NCOL];
 
 static
@@ -45,6 +55,45 @@ emalloc(uint n)
 	return p;
 }
 
+static
+Prompt *
+prompt_draw(Image *b, Point pos, int lines, int width)
+{
+	Rectangle textr;
+	Prompt *p = emalloc(sizeof(*p));
+	// for reasons unknown, Frame does not work correctly when
+	// not setting up with malloc but using Frame frame;
+	p->frame = emalloc(sizeof(*(p->frame)));
+	p->r = rectaddpt(
+			insetrect(Rect(0, 0, width, (font->height+Vspacing)*lines), -Margin),
+			pos);
+
+	p->backup = allocimage(display, p->r, screen->chan, 0, -1);
+	if(p->backup == 0)
+		error("allocimage: server out of mem");
+	draw(p->backup, p->r, screen, nil, p->r.min);
+
+	draw(b, p->r, cols[BACK], nil, ZP);
+	border(b, p->r, Blackborder, cols[BORD], ZP);
+
+	textr.max.x = p->r.max.x-Margin;
+	textr.min.x = textr.max.x-width;
+	textr.min.y = p->r.min.y+Margin;
+	textr.max.y = textr.min.y + lines*(font->height+Vspacing);
+
+	frinit(p->frame, textr, font, b, cols);
+	return p;
+}
+
+static
+void
+prompt_free(Prompt *p)
+{
+	free(p->frame);
+	draw(screen, p->r, p->backup, nil, p->r.min);
+	free(p->backup);
+	free(p);
+}
 
 void
 menucolors(void)
@@ -76,60 +125,30 @@ void pd(Rune *r, int n){
 }
 
 int
-acme_prompt(Keyboardctl *kbc, Rune **buf, ulong nrbuf)
+acme_prompt(Keyboardctl *kbc, Rune **buf, ulong nrbuf, Point pt, uint width)
 {
-	Rectangle r, promptr, sc, textr;
-	Image *b, *backup;
-	Point pt;
+	Rectangle sc;
 	Rune rn, *rbuf;
-	int t, width, end;
-	Frame *fr;
+	int t, end, lines;
 
 	rbuf = *buf;
 
-	// for reasons unknown, Frame does not work correctly when
-	// not setting up with malloc but using Frame fr;
-	fr = emalloc(sizeof(*fr));
 	if(cols[BACK] == nil)
 		menucolors();
 
 	sc = screen->clipr;
-
 	replclipr(screen, 0, screen->r);
-	width = 400;
-	r = insetrect(Rect(0, 0, width, font->height+Vspacing), -Margin);
 
-	pt.x = Dx(screen->r)/2-width/2;
-	pt.y = Dy(screen->r)/2;
+	lines = 1;
+	Prompt *pr = prompt_draw(screen, pt, lines, width);
+	frtick(pr->frame, frptofchar(pr->frame, 0), 1);
 
-	promptr = rectaddpt(r, pt);
-
-	textr.max.x = promptr.max.x-Margin;
-	textr.min.x = textr.max.x-width;
-	textr.min.y = promptr.min.y+Margin;
-	textr.max.y = textr.min.y + 1*(font->height+Vspacing);
-
-	b = screen;
-
-	/* backup current content befor drawing over it */
-	backup = allocimage(display, promptr, screen->chan, 0, -1);
-	if(backup)
-		draw(backup, promptr, screen, nil, promptr.min);
-
-	/* now draw the menu onto the screen */
-	draw(b, promptr, cols[BACK], nil, ZP);
-
-	/* and a border */
-	border(b, promptr, Blackborder, cols[BORD], ZP);
-	frinit(fr, textr, font, b, cols);
-	frtick(fr, frptofchar(fr, 0), 1);
 	flushimage(display, 1);
-
 	end = 0;
 	t = 0; /* tick pos */
 	/* this just works in the keyboard-thread! Blocking! */
 	while(recv(kbc->c, &rn)) {
-		frtick(fr, frptofchar(fr, t), 0);	/* remove last tick */
+		frtick(pr->frame, frptofchar(pr->frame, t), 0);	/* remove last tick */
 		switch(rn) {
 			case '\n':
 				goto out;
@@ -138,7 +157,7 @@ acme_prompt(Keyboardctl *kbc, Rune **buf, ulong nrbuf)
 					continue;
 				if(t < end)
 					memmove(rbuf+t-1,rbuf+t,(end-t)*sizeof(*rbuf));
-				frdelete(fr, t-1, t);
+				frdelete(pr->frame, t-1, t);
 				end--;
 				t--;
 				break;
@@ -162,33 +181,29 @@ acme_prompt(Keyboardctl *kbc, Rune **buf, ulong nrbuf)
 				if(t < end)
 					memmove(rbuf+t+1,rbuf+t,(end-t)*sizeof(*rbuf));
 				rbuf[t] = rn;
-				frinsert(fr, rbuf+t, rbuf+t+1, t);
+				frinsert(pr->frame, rbuf+t, rbuf+t+1, t);
 
 				end++;
 				t++;
+
+				if(pr->frame->lastlinefull){
+					prompt_free(pr);
+					pr = prompt_draw(screen, pt, ++lines, width);
+					frinsert(pr->frame, rbuf, rbuf+t, 0);
+				}
 				break;
 		}
 
 		/* frinsert/frdelete put tick and end of frame */
-		frtick(fr, frptofchar(fr, end), 0);
-		frtick(fr, frptofchar(fr, t), 1);
+		frtick(pr->frame, frptofchar(pr->frame, end), 0);
+		frtick(pr->frame, frptofchar(pr->frame, t), 1);
 
 		flushimage(display, 1);
 	}
 out:
 	rbuf[end] = 0;
-	/*
-	*res = emalloc(idx+1);
-	memcpy(*res, buf, idx);
-	(*res)[idx] = 0;
-	*/
-	free(fr);
-	if(b != screen)
-		freeimage(b);
-	if(backup){
-		draw(screen, promptr, backup, nil, promptr.min);
-		freeimage(backup);
-	}
+	prompt_free(pr);
+
 	replclipr(screen, 0, sc);
 	flushimage(display, 1);
 
