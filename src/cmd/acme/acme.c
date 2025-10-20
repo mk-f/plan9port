@@ -679,10 +679,11 @@ mousethread(void *v)
 							hit = acme_menuhit(2, mctl, &w->mmenu.menu, &buts);
 							if(hit != -1 && buts != 7){
 								cmd = runesmprint("%s", t->w->mmenu.menu.item[hit]);
-								if(buts == 3)
-									run_cmd(cmd, t, argtext);
+								argt = (buts == 3) ? argtext : nil;
+								if(strcmp(t->w->mmenu.menu.item[hit], "Run") == 0)
+									execute(t, t->q0, t->q1, FALSE, argt);
 								else
-									run_cmd(cmd, t, nil);
+									run_cmd(cmd, t, argt);
 								free(cmd);
 							}
 						}
