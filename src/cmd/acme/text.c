@@ -12,12 +12,15 @@
 #include <complete.h>
 #include "dat.h"
 #include "fns.h"
+#include "prompt.h"
 
 Image	*tagcols[NCOL];
 Image	*textcols[NCOL];
 static Rune Ldot[] = { '.', 0 };
 
 #define max_prompt 256
+static Rune pbuf[max_prompt];
+static Prompt *pr = nil;
 
 enum{
 	TABDIR = 3	/* width of tabs in directory windows */
@@ -696,7 +699,7 @@ texttype(Text *t, Rune r)
 	uint q0, q1;
 	int nnb, nb, n, i;
 	int nr;
-	Rune *rp, *prompt, *tmp;
+	Rune *rp;
 	Text *u;
 
 	if(t->what!=Body && t->what!=Tag && r=='\n')
@@ -809,17 +812,22 @@ texttype(Text *t, Rune r)
 		return;
 	case 0x10:  /* ^P:  */
 		typecommit(t);
-		prompt = emalloc(sizeof(*prompt)*max_prompt);
-		acme_prompt(keyboardctl, &prompt, max_prompt,
-			addpt(t->w->body.fr.r.min, Pt(Dx(t->w->body.fr.r)/4, Dy(t->w->body.fr.r)/2)),
-			Dx(t->w->body.fr.r)/2);
-		if(prompt[0] == ':'){
-			tmp = runesmprint("Edit %S", prompt + 1);
-			free(prompt);
-			prompt = tmp;
+		ulong pw = Dx(t->w->body.fr.r)/2;
+		Point ppt = addpt(t->w->body.fr.r.min, Pt(Dx(t->w->body.fr.r)/4, Dy(t->w->body.fr.r)/2));
+		Rune *cmd;
+
+		if(pr == nil)
+			pr = prinit(keyboardctl, pbuf, max_prompt);
+		prdraw(pr, screen, ppt, pw);
+
+		if(pbuf[0] == ':'){
+			cmd = runesmprint("Edit %S", pbuf + 1);
+			run_cmd(cmd, t, nil);
+			free(cmd);
+		}else{
+			run_cmd(pbuf, t, nil);
 		}
-		run_cmd(prompt, t, nil);
-		free(prompt);
+		// XXX TODO prfree(pr);
 		return;
 	Tagdown:
 		/* expand tag to show all text */
