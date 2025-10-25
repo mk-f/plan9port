@@ -29,6 +29,7 @@ wininit(Window *w, Window *clone, Rectangle r)
 	w->body.w = w;
 	w->id = ++winid;
 	mminit(w);
+	w->pr = nil;
 	incref(&w->ref);
 	if(globalincref)
 		incref(&w->ref);
@@ -320,7 +321,6 @@ void
 winclose(Window *w)
 {
 	int i;
-	char **p;
 
 	if(decref(&w->ref) == 0){
 		xfidlog(w, "del");
@@ -333,14 +333,9 @@ winclose(Window *w)
 			free(w->incl[i]);
 		free(w->incl);
 		free(w->events);
-		if(w->menu.item){
-			p = w->menu.item;
-			while(*p != nil) {
-				free(*p);
-				p++;
-			}
-			free(w->menu.item);
-		}
+		if(w->pr)
+			prfree(w->pr);
+		mmuserfree(w);
 		free(w);
 	}
 }

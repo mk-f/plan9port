@@ -89,6 +89,22 @@ void mmuserfree(Window *);
 void mmuserset(Window *, char **, int);
 char *mmuserget(Window *);
 
+typedef struct Prompt Prompt;
+struct Prompt {
+	Keyboardctl *kbc;
+	Rectangle r;
+	Image *backup;
+	Frame *frame;
+	Rune *buf;
+	ulong nbuf;
+	ulong end;
+	ulong tick;
+	ushort hl;
+};
+Prompt *prinit(Keyboardctl *, ulong);
+void prfree(Prompt *);
+int prdraw(Prompt *, Image *, Point, ulong);
+
 struct Runestr
 {
 	Rune	*r;
@@ -268,7 +284,6 @@ enum
 	AUTOINDENT,
 	NINDENT,
 };
-
 struct Window
 {
 	QLock	lk;
@@ -282,7 +297,6 @@ struct Window
 	uchar	dirty;
 	uchar	indent[NINDENT];
 	uchar	showdel;
-	Menu 	menu;
 	MMenu 	mmenu;
 	int		id;
 	Range	addr;
@@ -303,6 +317,7 @@ struct Window
 	int		nincl;
 	Rune		**incl;
 	Reffont	*reffont;
+	Prompt *pr;
 	QLock	ctllock;
 	uint		ctlfid;
 	char		*dumpstr;
