@@ -2,23 +2,27 @@
 #include <libc.h>
 #include <draw.h>
 #include <thread.h>
+#include <cursor.h>
 #include <mouse.h>
 #include <keyboard.h>
-#include <libString.h>
 #include <frame.h>
-#include "prompt.h"
-
-enum
-{
-	Margin = 4,		/* outside to text */
-	Border = 2,		/* outside to selection boxes */
-	Blackborder = 2,	/* width of outlining border */
-	Vspacing = 2,		/* extra spacing between lines of text */
-};
+#include <fcall.h>
+#include <plumb.h>
+#include <libsec.h>
+#include "dat.h"
 
 void menucolors(void);
+enum {
+	Blackborder = 2,
+	Vspacing = 2,
+};
 
 static	Image	*cols[NCOL];
+void pd(Rune *r, int n){
+		for(int i = 0; i < n; i++)
+			print("%C", r[i]);
+		print("\n");
+}
 
 static
 void
@@ -42,12 +46,12 @@ emalloc(uint n)
 }
 
 Prompt *
-prinit(Keyboardctl *kbc, Rune *buf, ulong nbuf)
+prinit(Keyboardctl *kbc, ulong nbuf)
 {
 	Prompt *p = emalloc(sizeof(*p));
 	p->kbc = kbc;
 	p->nbuf = nbuf;
-	p->buf = buf;
+	p->buf = emalloc(sizeof(*(p->buf))*nbuf);
 	p->frame = nil;
 	p->backup = nil;
 	p->end = 0;
@@ -61,17 +65,75 @@ prfree(Prompt *p)
 		free(p->frame);
 	if(p->backup)
 		free(p->backup);
+	free(p->buf);
 	free(p);
 }
+/* remove everything between p0 and p1, p1 is first *not* to be deleted */
 void
+prdelrunes(Prompt *p, ulong p0, ulong p1)
+{
+	/* end and tick point to the *next* place to add */
+	if(p->end == 0 || p1 <= p0)
+		return;
+
+	/* move everything above deletion to start of deletion */
+	memmove(p->buf+p0,p->buf+p1,(p->end-p1)*sizeof(*(p->buf)));
+
+	if(p->frame)
+		frdelete(p->frame, p0, p1);
+
+	p->end -= p1 - p0;
+	p->tick = p0;
+}
+void
+praddrune(Prompt *p, Rune r)
+{
+	if(p->hl)
+		prdelrunes(p, 0, p->end);
+
+	if(p->end == p->nbuf - 1)
+		return;
+	/* move everything above cursor up */
+	if(p->tick < p->end)
+		memmove(p->buf+p->tick+1,p->buf+p->tick,(p->end-p->tick)*sizeof(*(p->buf)));
+	p->buf[p->tick] = r;
+	frinsert(p->frame, p->buf+p->tick, p->buf+p->tick+1, p->tick);
+
+	p->end++;
+	p->tick++;
+}
+void
+prsettick(Prompt *p, ulong tick)
+{
+	if(tick >= 0 && tick <= p->end)
+		p->tick = tick;
+}
+ulong
+lastspace(Prompt *p)
+{
+	int i;
+	for(i=p->tick-1;i>0;i--)
+		if(p->buf[i] != ' ' && p->buf[i] != '\t')
+			break;
+	for(;i>0;i--)
+		if(p->buf[i] == ' ' || p->buf[i] == '\t')
+			break;
+
+	return (i==0)? 0 : i + 1;
+}
+
+
+int
 prdraw(Prompt *p, Image *scr, Point pos, ulong width)
 {
 	Rectangle textr, sc;
-	uint l, h;
+	uint l;
 	Rune r;
+	int ret;
 
+	ret = 1;
 	l = 1;
-	h = (p->end) ? 1 : 0;
+	p->hl = p->end;
 
 	if(cols[BACK] == nil)
 		menucolors();
@@ -109,77 +171,63 @@ redraw:
 
 	frinsert(p->frame, p->buf, p->buf+p->end, 0);
 	frtick(p->frame, frptofchar(p->frame, p->end), 0);
-	frtick(p->frame, frptofchar(p->frame, p->tick), 1);
+	frdrawsel(p->frame, frptofchar(p->frame, 0), 0, p->end, p->hl);
+	if(!p->hl)
+		frtick(p->frame, frptofchar(p->frame, p->tick), 1);
 
 	/* frame does not show all text, grow down */
 	if(p->frame->nchars < p->end){
 		l = (p->end / p->frame->nchars) + ((p->end % p->frame->nchars) ? 1 : 0);
 		goto redraw;
 	}
-	/* TODO
-	frdrawsel(p->frame, frptofchar(p->frame, 0), p->frame->p0, p->frame->p1, h);
-	*/
 	flushimage(display, 1);
 
 	while(recv(p->kbc->c, &r)) {
 		frtick(p->frame, frptofchar(p->frame, p->tick), 0);	/* remove last tick */
 		switch(r) {
 			case '\n':
+			case 0x10:		/* ctrl + p */
 				goto out;
 			case 0x08:		/* backspace, ^H */
-				if(p->tick == 0)
-					continue;
-				if(p->tick < p->end)
-					memmove(p->buf+p->tick-1,p->buf+p->tick,(p->end-p->tick)*sizeof(*(p->buf)));
-				frdelete(p->frame, p->tick-1, p->tick);
-				p->end--;
-				p->tick--;
+				if(!p->hl)
+					prdelrunes(p, p->tick-1, p->tick);
+				else
+					prdelrunes(p, 0, p->end);
 				break;
 			case 0x15:			/* ^U: delete from cursor to start of line */
-				if(p->tick == 0)
-					continue;
-				memmove(p->buf,p->buf+p->tick,(p->end-p->tick)*sizeof(*(p->buf)));
-				frdelete(p->frame, 0, p->tick);
-				p->end -= p->tick;
-				p->tick = 0;
+				prdelrunes(p, 0, p->tick);
 				break;
 			case 0x17:			/* ^W: delete word before cursor */
-				//TODO
+				prdelrunes(p, lastspace(p), p->tick);
 				break;
 			case 0x1b:			/* Esc */
+				ret = 0;
+				goto out;
 				break;
 			case 0xf011:		/* left */
-				if(p->tick > 0)
-					p->tick--;
+				prsettick(p, p->tick - 1);
 				break;
 			case 0xf012:		/* right */
-				if(p->tick < p->end)
-					p->tick++;
+				prsettick(p, p->tick + 1);
 				break;
 			case 0x01:			/* ^A: beginning of line */
-				p->tick = 0;
+				prsettick(p, 0);
 				break;
 			case 0x05:			/* ^E: end of line */
-				p->tick = p->end;
+				prsettick(p, p->end);
 				break;
 			default:
-				if(p->end == p->nbuf - 1)
-					continue;
-				if(p->tick < p->end)
-					memmove(p->buf+p->tick+1,p->buf+p->tick,(p->end-p->tick)*sizeof(*(p->buf)));
-				p->buf[p->tick] = r;
-				frinsert(p->frame, p->buf+p->tick, p->buf+p->tick+1, p->tick);
-
-				p->end++;
-				p->tick++;
-
-				if(p->frame->lastlinefull){
-					l++;
-					goto redraw;
-				}
+				praddrune(p, r);
 				break;
 		}
-
+		if(p->frame->lastlinefull){
+			l++;
+			goto redraw;
+		}
+		if(p->hl){
+			frdrawsel(p->frame, frptofchar(p->frame, 0), 0, p->hl, 0);
+			p->hl = 0;
+		}
 		/* frinsert/frdelete put tick and end of frame */
 		frtick(p->frame, frptofchar(p->frame, p->end), 0);
 		frtick(p->frame, frptofchar(p->frame, p->tick), 1);
@@ -192,7 +240,7 @@ out:
 	flushimage(display, 1);
 
 	replclipr(screen, 0, sc);
-
+	return ret;
 }
 
 void
@@ -217,9 +265,4 @@ menucolors(void)
 	cols[BORD] = display->black;
 	cols[TEXT] = display->black;
 	cols[HTEXT] = display->white;
-}
-void pd(Rune *r, int n){
-		for(int i = 0; i < n; i++)
-			print("%C", r[i]);
-		print("\n");
 }
