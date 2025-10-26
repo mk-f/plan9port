@@ -455,6 +455,7 @@ keyboardthread(void *v)
 {
 	Rune r;
 	Timer *timer;
+	Rune *cmd;
 	Text *t;
 	enum { KTimer, KKey, NKALT };
 	static Alt alts[NKALT+1];
@@ -487,6 +488,31 @@ keyboardthread(void *v)
 			break;
 		case KKey:
 		casekeyboard:
+			if(r == 0x10){ /* ^P */
+				if(bartflag)
+					t = barttext;
+				else
+					t = rowwhich(&row, mouse->xy);
+				if(!t || !t->w)
+					break;
+
+				if(t->w->pr == nil)
+					t->w->pr = prinit(keyboardctl, 255);
+				if(!prdraw(t->w->pr, screen,
+					 addpt(t->w->body.fr.r.min, Pt(Dx(t->w->body.fr.r)/4, Dy(t->w->body.fr.r)/2)),
+					 Dx(t->w->body.fr.r)/2))
+					return;
+
+				if(t->w->pr->buf[0] == ':'){
+					cmd = runesmprint("Edit %S", t->w->pr->buf + 1);
+					run_cmd(cmd, t, nil);
+					free(cmd);
+				}else{
+					run_cmd(t->w->pr->buf, t, nil);
+				}
+				flushimage(display, 1);
+				break;
+			}
 			typetext = rowtype(&row, r, mouse->xy);
 			t = typetext;
 			if(t!=nil && t->col!=nil && !(r==Kdown || r==Kleft || r==Kright))	/* scrolling doesn't change activecol */
