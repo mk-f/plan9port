@@ -807,26 +807,6 @@ texttype(Text *t, Rune r)
 		typecommit(t);
 		put(t, t, nil, TRUE, FALSE, nil, 0);
 		return;
-	case 0x10:  /* ^P:  */
-		typecommit(t);
-		Rune *cmd;
-
-		if(t->w->pr == nil)
-			t->w->pr = prinit(keyboardctl, max_prompt);
-
-		if(!prdraw(t->w->pr, screen,
-			 addpt(t->w->body.fr.r.min, Pt(Dx(t->w->body.fr.r)/4, Dy(t->w->body.fr.r)/2)),
-			 Dx(t->w->body.fr.r)/2))
-			return;
-
-		if(t->w->pr->buf[0] == ':'){
-			cmd = runesmprint("Edit %S", t->w->pr->buf + 1);
-			run_cmd(cmd, t, nil);
-			free(cmd);
-		}else{
-			run_cmd(t->w->pr->buf, t, nil);
-		}
-		return;
 	Tagdown:
 		/* expand tag to show all text */
 		if(!t->w->tagexpand){
