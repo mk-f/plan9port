@@ -501,7 +501,7 @@ keyboardthread(void *v)
 				if(!prdraw(t->w->pr, screen,
 					 addpt(t->w->body.fr.r.min, Pt(Dx(t->w->body.fr.r)/4, Dy(t->w->body.fr.r)/2)),
 					 Dx(t->w->body.fr.r)/2))
-					return;
+					break;
 
 				if(t->w->pr->buf[0] == ':'){
 					cmd = runesmprint("Edit %S", t->w->pr->buf + 1);
