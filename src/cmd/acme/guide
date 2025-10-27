@@ -1,0 +1,3 @@
+(mk o.acme && /home/$home/src/acme/acme.sh -d -v)
+(mk clean && mk o.acme && /home/$home/src/acme/acme.sh -d)
+(mk o.acme && Win -c gdb)
