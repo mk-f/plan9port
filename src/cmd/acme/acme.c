@@ -495,9 +495,10 @@ keyboardthread(void *v)
 					t = rowwhich(&row, mouse->xy);
 				if(!t || !t->w)
 					break;
-
 				if(t->w->pr == nil)
 					t->w->pr = prinit(keyboardctl, 255);
+				qlock(&row.lk);
+				winlock(t->w, 'K');
 				if(!prdraw(t->w->pr, screen,
 					 addpt(t->w->body.fr.r.min, Pt(Dx(t->w->body.fr.r)/4, Dy(t->w->body.fr.r)/2)),
 					 Dx(t->w->body.fr.r)/2))
@@ -510,6 +511,8 @@ keyboardthread(void *v)
 				}else{
 					run_cmd(t->w->pr->buf, t, nil);
 				}
+				winunlock(t->w);
+				qunlock(&row.lk);
 				flushimage(display, 1);
 				break;
 			}
