@@ -65,7 +65,7 @@ void mmsync(Window *w)
 {
 	u8int isys;
 	char **isysstart;
-	int i, j, n, ln, lh;
+	int i, j, n, ln, lh, dh;
 
 	isysstart = w->mmenu.istore+8;
 
@@ -93,6 +93,7 @@ void mmsync(Window *w)
 	n = nbset(isys);
 	ln = nbset(w->mmenu.isys);
 	isysstart = w->mmenu.istore + (MMUserStart-n);
+	dh = n - 1;
 
 	if(isys != w->mmenu.isys){
 		/* last hit was in system area */
@@ -119,7 +120,7 @@ void mmsync(Window *w)
 			}
 		}
 		if(lh != -1) /* last hit item is not in current set, can't adjust */
-			w->mmenu.menu.lasthit = MMSnarf;
+			w->mmenu.menu.lasthit = dh;
 		w->mmenu.isys = isys;
 	}
 	/* update user-area */
@@ -140,7 +141,7 @@ void mmsync(Window *w)
 		/* last hit was in user-area, don't try to adjust, set
 			to default */
 		if(w->mmenu.menu.lasthit >= ln)
-			w->mmenu.menu.lasthit = MMSnarf;
+			w->mmenu.menu.lasthit = dh;
 	}
 	qunlock(&(w->mmenu.lk));
 
