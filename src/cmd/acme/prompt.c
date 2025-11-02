@@ -237,6 +237,8 @@ redraw:
 out:
 	p->buf[p->end] = 0;
 	draw(scr, p->r, p->backup, nil, p->r.min);
+	free(p->backup);
+	p->backup = nil;
 	flushimage(display, 1);
 
 	replclipr(screen, 0, sc);
