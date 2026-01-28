@@ -13,6 +13,7 @@
 Client	*clients;
 Client	*current;
 
+extern int get_proc(pid_t,pid_t*,pid_t*);
 void
 setactive(Client *c, int on)
 {
@@ -144,6 +145,7 @@ getclient(Window w, int create)
 	if(w == 0 || getscreen(w))
 		return 0;
 
+
 	for(c = clients; c; c = c->next)
 		if(c->window == w || c->parent == w)
 			return c;
@@ -174,8 +176,30 @@ getclient(Window w, int create)
 	c->wmcmaps = 0;
 	c->next = clients;
 	c->virt = virt;
+	c->embedder = 0;
 	clients = c;
 	return c;
+}
+
+Client *
+getorigin(Client *c){
+	Client *oc;
+	pid_t pid, sid, ppid;
+
+	if(c->pid <= 0)
+		return 0;
+
+	get_proc(c->pid, &ppid, &sid);
+	//fprintf(stderr, "pid: %d, sid: %d\n", c->pid, sid);
+
+	get_proc(sid, &ppid, &pid);
+	//fprintf(stderr, "sid-parent: %d\n", ppid);
+
+	for(oc = clients; oc; oc = oc->next)
+		if(oc->pid == ppid)
+			return oc;
+
+	return NULL;
 }
 
 void
