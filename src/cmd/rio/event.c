@@ -11,6 +11,7 @@
 #include "fns.h"
 #include "patchlevel.h"
 
+
 void
 mainloop(int shape_event)
 {
@@ -270,6 +271,7 @@ newwindow(XCreateWindowEvent *e)
 	/* we don't set curtime as nothing here uses it */
 	if(e->override_redirect)
 		return;
+
 	c = getclient(e->window, 1);
 	if(c && c->window == e->window && (s = getscreen(e->parent))){
 		c->x = e->x;
@@ -293,6 +295,17 @@ destroy(Window w)
 	c = getclient(w, 0);
 	if(c == 0)
 		return;
+	if(c->embedder){
+		c->window = c->embedder;
+		XResizeWindow(dpy, c->window, c->dx, c->dy);
+		sendconfig(c);
+
+		XMapWindow(dpy, c->parent);
+		XMapWindow(dpy, c->window);
+
+		c->embedder = 0;
+		return;
+	}
 
 	if(numvirtuals > 1)
 		for(i=0; i<numvirtuals; i++)

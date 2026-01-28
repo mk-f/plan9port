@@ -206,6 +206,9 @@ spawn(ScreenInfo *s)
 			signal(SIGINT, SIG_DFL);
 			signal(SIGTERM, SIG_DFL);
 			signal(SIGHUP, SIG_DFL);
+
+			setsid();
+
 			if(termprog != NULL){
 				execl(shell, shell, "-c", termprog, (char*)0);
 				fprintf(stderr, "rio: exec %s", shell);

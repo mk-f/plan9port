@@ -55,6 +55,7 @@ Atom		_rio_running;
 Atom		_rio_hold_mode;
 Atom		wm_state_fullscreen;
 Atom		wm_state;
+Atom		_net_wm_pid;
 
 char	*fontlist[] = {
 	"lucm.latin1.9",
@@ -183,6 +184,7 @@ main(int argc, char *argv[])
 	_rio_running = XInternAtom(dpy, "_9WM_RUNNING", False);
 	_rio_hold_mode = XInternAtom(dpy, "_9WM_HOLD_MODE", False);
 	wm_state = XInternAtom(dpy, "_NET_WM_STATE", False);
+	_net_wm_pid = XInternAtom(dpy, "_NET_WM_PID", False);
 	wm_state_fullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 
 	if(fname != 0)

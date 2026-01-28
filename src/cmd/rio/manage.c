@@ -26,6 +26,8 @@ manage(Client *c, int mapped)
 	XWMHints *hints;
 	XSetWindowAttributes attrs;
 
+	Client *oc;
+
 	trace("manage", c, 0);
 	XSelectInput(dpy, c->window, ColormapChangeMask | EnterWindowMask | PropertyChangeMask | FocusChangeMask | KeyPressMask);
 
@@ -58,6 +60,8 @@ manage(Client *c, int mapped)
 	gettrans(c);
 	if(c->is9term)
 		c->hold = getiprop(c->window, _rio_hold_mode);
+
+	c->pid = getpidprop(c->window);
 
 	/* Figure out what to do with the window from hints */
 
@@ -128,6 +132,29 @@ manage(Client *c, int mapped)
 	attrs.border_pixel =  c->screen->black;
 	attrs.background_pixel =  c->screen->white;
 	attrs.colormap = c->screen->def_cmap;
+
+	oc = getorigin(c);
+	if(oc && oc->is9term && !oc->embedder){
+		//fprintf(stderr, "origin window: %lx, parent: %lx\n", oc->window, oc->parent);
+		XResizeWindow(dpy, c->window, oc->dx, oc->dy);
+		XSetWindowBorderWidth(dpy, c->window, 0);
+
+		XReparentWindow(dpy, c->window, oc->parent, BORDER, BORDER);
+		XUnmapWindow(dpy, oc->window);
+		oc->embedder = oc->window;
+		oc->window = c->window;
+
+		ScreenInfo *screen = oc->screen;
+		XMapWindow(dpy, c->window);
+		rmclient(c);
+
+		if(current && current->screen == screen)
+			cmapfocus(current);
+		XSync(dpy, True);
+
+		return 1;
+	}
+
 	c->parent = XCreateWindow(dpy, c->screen->root,
 			c->x - BORDER, c->y - BORDER,
 			c->dx + 2*BORDER, c->dy + 2*BORDER,
@@ -158,6 +185,7 @@ manage(Client *c, int mapped)
 	}
 
 	XReparentWindow(dpy, c->window, c->parent, BORDER, BORDER);
+
 #ifdef	SHAPE
 	if(shape){
 		XShapeSelectInput(dpy, c->window, ShapeNotifyMask);
@@ -391,6 +419,20 @@ _getprop(Window w, Atom a, Atom type, long len, unsigned char **p)
 		XFree((void*) *p);
 	/* could check real_type, format, extra here... */
 	return n;
+}
+
+pid_t
+getpidprop(Window w){
+
+	long *p = 0;
+	pid_t pid;
+
+	if(_getprop(w, _net_wm_pid, XA_CARDINAL, 1L, (void*)&p) <= 0)
+		return 0;
+	pid = (pid_t) *p;
+	XFree((char *) p);
+
+	return pid;
 }
 
 char *

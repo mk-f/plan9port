@@ -48,6 +48,9 @@ struct Client {
 	int 		proto;
 	int			virt;
 
+	pid_t		pid;
+	int			embedder;
+
 	char		*label;
 	char		*instance;
 	char		*class;
@@ -164,6 +167,7 @@ extern Atom		wm_lose_focus;
 extern Atom 		wm_colormaps;
 extern Atom		wm_state_fullscreen;
 extern Atom		wm_state;
+extern Atom		_net_wm_pid;
 /* client.c */
 extern Client		*clients;
 extern Client		*current;
