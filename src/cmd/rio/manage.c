@@ -135,17 +135,19 @@ manage(Client *c, int mapped)
 
 	oc = getorigin(c);
 	if(oc && oc->is9term && !oc->embedder){
-		//fprintf(stderr, "origin window: %lx, parent: %lx\n", oc->window, oc->parent);
-		XResizeWindow(dpy, c->window, oc->dx, oc->dy);
 		XSetWindowBorderWidth(dpy, c->window, 0);
 
 		XReparentWindow(dpy, c->window, oc->parent, BORDER, BORDER);
-		XUnmapWindow(dpy, oc->window);
 		oc->embedder = oc->window;
 		oc->window = c->window;
 
+		XMoveResizeWindow(dpy, oc->parent, oc->x-BORDER, oc->y-BORDER,
+					oc->dx+2*BORDER, oc->dy+2*BORDER);
+		XMoveResizeWindow(dpy, oc->window, BORDER, BORDER, oc->dx, oc->dy);
+
 		ScreenInfo *screen = oc->screen;
-		XMapWindow(dpy, c->window);
+		XMapWindow(dpy, oc->window);
+		XUnmapWindow(dpy, oc->embedder);
 		rmclient(c);
 
 		if(current && current->screen == screen)
