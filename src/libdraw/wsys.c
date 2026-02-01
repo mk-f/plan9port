@@ -16,6 +16,12 @@ drawsetlabel(char *label)
 	return _displaylabel(display, label);
 }
 
+int
+drawsetpid(int pid)
+{
+	return _displaypid(display, pid);
+}
+
 void
 bouncemouse(Mouse *m)
 {

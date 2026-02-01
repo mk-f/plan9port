@@ -45,6 +45,7 @@ static void	rpc_resizeimg(Client*);
 static void	rpc_resizewindow(Client*, Rectangle);
 static void	rpc_setcursor(Client*, Cursor*, Cursor2*);
 static void	rpc_setlabel(Client*, char*);
+static void	rpc_setpid(Client*, int);
 static void	rpc_setmouse(Client*, Point);
 static void	rpc_topwin(Client*);
 static void	rpc_bouncemouse(Client*, Mouse);
@@ -55,6 +56,7 @@ static ClientImpl x11impl = {
 	rpc_resizewindow,
 	rpc_setcursor,
 	rpc_setlabel,
+	rpc_setpid,
 	rpc_setmouse,
 	rpc_topwin,
 	rpc_bouncemouse,
@@ -526,7 +528,7 @@ runxevent(XEvent *xev)
 
 
 static Memimage*
-xattach(Client *client, char *label, char *winsize)
+xattach(Client *client, char *label, char *winsize, int pid)
 {
 	char *argv[2];
 	int havemin, height, mask, width, x, y;
@@ -694,6 +696,18 @@ xattach(Client *client, char *label, char *winsize)
 		&hint,		/* XA_WM_HINTS */
 		&classhint	/* XA_WM_CLASSHINTS */
 	);
+
+	XChangeProperty(
+		_x.display,
+		w->drawable,
+		XInternAtom(_x.display, "_NET_WM_PID", False),
+		XA_CARDINAL,
+		32,
+		PropModeReplace,
+		(void *) &pid,
+		1
+	);
+
 	XFlush(_x.display);
 
 	if(havemin){
@@ -779,12 +793,12 @@ xattach(Client *client, char *label, char *winsize)
 }
 
 Memimage*
-rpc_attach(Client *client, char *label, char *winsize)
+rpc_attach(Client *client, char *label, char *winsize, int pid)
 {
 	Memimage *m;
 
 	xlock();
-	m = xattach(client, label, winsize);
+	m = xattach(client, label, winsize, pid);
 	xunlock();
 	return m;
 }
@@ -818,6 +832,27 @@ rpc_setlabel(Client *client, char *label)
 		nil,		/* XA_WM_HINTS */
 		nil	/* XA_WM_CLASSHINTS */
 	);
+	XFlush(_x.display);
+	xunlock();
+}
+
+void
+rpc_setpid(Client *client, int pid)
+{
+	Xwin *w = (Xwin*)client->view;
+
+	xlock();
+	XChangeProperty(
+		_x.display,
+		w->drawable,
+		XInternAtom(_x.display, "_NET_WM_PID", False),
+		XA_CARDINAL,
+		32,
+		PropModeReplace,
+		(void *) &pid,
+		1
+	);
+
 	XFlush(_x.display);
 	xunlock();
 }

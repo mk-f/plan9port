@@ -1,7 +1,7 @@
 #ifndef _DRAW_H_
 #define _DRAW_H_ 1
 #if defined(__cplusplus)
-extern "C" { 
+extern "C" {
 #endif
 
 AUTOLIB(draw)
@@ -110,7 +110,7 @@ typedef enum
 } Drawop;
 
 /*
- * image channel descriptors 
+ * image channel descriptors
  */
 enum {
 	CRed = 0,
@@ -205,7 +205,7 @@ struct Display
 	struct Mux	*mux;
 	int		srvfd;
 	int		dpi;
-	
+
 	Font	*firstfont;
 	Font	*lastfont;
 };
@@ -322,12 +322,12 @@ struct Font
 	Cachesubf	*subf;
 	Cachefont	**sub;	/* as read from file */
 	Image		*cacheimage;
-	
+
 	/* doubly linked list of fonts known to display */
 	int ondisplaylist;
 	Font *next;
 	Font *prev;
-	
+
 	/* on hi-dpi systems, one of these is set to f and the other is the other-dpi version of f */
 	Font	*lodpi;
 	Font	*hidpi;
@@ -364,6 +364,7 @@ extern Image*	namedimage(Display*, char*);
 extern int	nameimage(Image*, char*, int);
 extern Image* allocimagemix(Display*, u32int, u32int);
 extern int	drawsetlabel(char*);
+extern int	drawsetpid(int);
 extern int	scalesize(Display*, int);
 
 /*
@@ -504,7 +505,7 @@ extern void	loadhidpi(Font*);
 extern void	swapfont(Font*, Font**, Font**);
 
 /*
- * Predefined 
+ * Predefined
  */
 extern	Point		ZP;
 extern	Rectangle	ZR;
@@ -571,6 +572,7 @@ int		_displayconnect(Display *d);
 int		_displaycursor(Display *d, struct Cursor *c, struct Cursor2 *c2);
 int		_displayinit(Display *d, char *label, char *winsize);
 int		_displaylabel(Display *d, char *label);
+int		_displaypid(Display *d, int pid);
 int		_displaymoveto(Display *d, Point p);
 int		_displaymux(Display *d);
 int		_displayrddraw(Display *d, void *v, int n);

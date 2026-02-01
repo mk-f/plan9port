@@ -59,6 +59,7 @@ sizeW2M(Wsysmsg *m)
 	case Ttop:
 	case Rtop:
 	case Rresize:
+	case Rpid:
 		return 4+1+1;
 	case Rrdmouse:
 		return 4+1+1+4+4+4+4+1;
@@ -83,6 +84,7 @@ sizeW2M(Wsysmsg *m)
 			+_stringsize(m->id);
 	case Tinit:
 		return 4+1+1
+			+4
 			+_stringsize(m->winsize)
 			+_stringsize(m->label);
 	case Rrdsnarf:
@@ -93,6 +95,7 @@ sizeW2M(Wsysmsg *m)
 		return 4+1+1+4+m->count;
 	case Trddraw:
 	case Rwrdraw:
+	case Tpid:
 		return 4+1+1+4;
 	case Tresize:
 		return 4+1+1+4*4;
@@ -129,6 +132,7 @@ convW2M(Wsysmsg *m, uchar *p, uint n)
 	case Ttop:
 	case Rtop:
 	case Rresize:
+	case Rpid:
 		break;
 	case Rerror:
 		PUTSTRING(p+6, m->error);
@@ -180,7 +184,8 @@ convW2M(Wsysmsg *m, uchar *p, uint n)
 		PUTSTRING(p+6, m->id);
 		break;
 	case Tinit:
-		p += 6;
+		PUT(p+6, m->pid);
+		p += 10;
 		p += PUTSTRING(p, m->winsize);
 		p += PUTSTRING(p, m->label);
 		break;
@@ -202,6 +207,9 @@ convW2M(Wsysmsg *m, uchar *p, uint n)
 		PUT(p+10, m->rect.min.y);
 		PUT(p+14, m->rect.max.x);
 		PUT(p+18, m->rect.max.y);
+		break;
+	case Tpid:
+		PUT(p+6, m->pid);
 		break;
 	}
 	return nn;
@@ -237,6 +245,7 @@ convM2W(uchar *p, uint n, Wsysmsg *m)
 	case Ttop:
 	case Rtop:
 	case Rresize:
+	case Rpid:
 		break;
 	case Rerror:
 		GETSTRING(p+6, &m->error);
@@ -288,7 +297,8 @@ convM2W(uchar *p, uint n, Wsysmsg *m)
 		GETSTRING(p+6, &m->id);
 		break;
 	case Tinit:
-		p += 6;
+		GET(p+6, m->pid);
+		p += 10;
 		p += GETSTRING(p, &m->winsize);
 		p += GETSTRING(p, &m->label);
 		break;
@@ -310,6 +320,9 @@ convM2W(uchar *p, uint n, Wsysmsg *m)
 		GET(p+10, m->rect.min.y);
 		GET(p+14, m->rect.max.x);
 		GET(p+18, m->rect.max.y);
+		break;
+	case Tpid:
+		GET(p+6, m->pid);
 		break;
 	}
 	return nn;
@@ -384,7 +397,7 @@ drawfcallfmt(Fmt *fmt)
 	case Rctxt:
 		return fmtprint(fmt, "Rctxt");
 	case Tinit:
-		return fmtprint(fmt, "Tinit label='%s' winsize='%s'", m->label, m->winsize);
+		return fmtprint(fmt, "Tinit label='%s' winsize='%s' pid='%d'", m->label, m->winsize, m->pid);
 	case Rinit:
 		return fmtprint(fmt, "Rinit");
 	case Trdsnarf:
@@ -411,5 +424,9 @@ drawfcallfmt(Fmt *fmt)
 		return fmtprint(fmt, "Tresize %R", m->rect);
 	case Rresize:
 		return fmtprint(fmt, "Rresize");
+	case Tpid:
+		return fmtprint(fmt, "Tpid %d", m->pid);
+	case Rpid:
+		return fmtprint(fmt, "Rpid");
 	}
 }

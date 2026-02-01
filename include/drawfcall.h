@@ -104,6 +104,8 @@ enum {
 	Rctxt,
 	Trdkbd4 = 32,
 	Rrdkbd4,
+	Tpid = 34,
+	Rpid,
 	Tmax,
 };
 
@@ -130,6 +132,7 @@ struct Wsysmsg
 	uchar *data;
 	uint count;
 	Rectangle rect;
+	int pid; // should be pit_t
 };
 
 uint	convW2M(Wsysmsg*, uchar*, uint);
