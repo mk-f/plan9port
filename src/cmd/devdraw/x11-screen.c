@@ -637,6 +637,7 @@ xattach(Client *client, char *label, char *winsize, int pid)
 		CWBackPixel|CWBorderPixel|CWColormap,
 		&attr		/* attributes (the above aren't?!) */
 	);
+	XSelectInput(_x.display, w->drawable, StructureNotifyMask | PropertyChangeMask);
 
 	/*
 	 * Label and other properties required by ICCCCM.
