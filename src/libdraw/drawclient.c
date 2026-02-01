@@ -311,6 +311,7 @@ _displayinit(Display *d, char *label, char *winsize)
 {
 	Wsysmsg tx, rx;
 
+	tx.pid = getpid();
 	tx.type = Tinit;
 	tx.label = label;
 	tx.winsize = winsize;
@@ -384,6 +385,16 @@ _displaybouncemouse(Display *d, Mouse *m)
 
 	tx.type = Tbouncemouse;
 	tx.mouse = *m;
+	return displayrpc(d, &tx, &rx, nil);
+}
+
+int
+_displaypid(Display *d, int pid)
+{
+	Wsysmsg tx, rx;
+
+	tx.type = Tpid;
+	tx.pid = pid;
 	return displayrpc(d, &tx, &rx, nil);
 }
 

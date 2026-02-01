@@ -207,7 +207,7 @@ runmsg(Client *c, Wsysmsg *m)
 		break;
 
 	case Tinit:
-		i = rpc_attach(c, m->label, m->winsize);
+		i = rpc_attach(c, m->label, m->winsize, m->pid);
 		if(i == nil) {
 			replyerror(c, m);
 			break;
@@ -321,6 +321,11 @@ runmsg(Client *c, Wsysmsg *m)
 
 	case Tresize:
 		c->impl->rpc_resizewindow(c, m->rect);
+		replymsg(c, m);
+		break;
+
+	case Tpid:
+		c->impl->rpc_setpid(c, m->pid);
 		replymsg(c, m);
 		break;
 	}

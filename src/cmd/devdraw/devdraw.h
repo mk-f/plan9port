@@ -50,6 +50,7 @@ struct ClientImpl
 	void (*rpc_resizewindow)(Client*, Rectangle);
 	void (*rpc_setcursor)(Client*, Cursor*, Cursor2*);
 	void (*rpc_setlabel)(Client*, char*);
+	void (*rpc_setpid)(Client*, int);
 	void (*rpc_setmouse)(Client*, Point);
 	void (*rpc_topwin)(Client*);
 	void (*rpc_bouncemouse)(Client*, Mouse);
@@ -208,7 +209,7 @@ void	gfx_started(void);
 // rpc_* routines are called on the RPC thread,
 // invoked by the RPC server code to do graphics work.
 // No locks are held on entry.
-Memimage *rpc_attach(Client*, char*, char*);
+Memimage *rpc_attach(Client*, char*, char*, int);
 char*	rpc_getsnarf(void);
 void	rpc_putsnarf(char*);
 void	rpc_shutdown(void);
