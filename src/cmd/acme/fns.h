@@ -110,3 +110,4 @@ Range range(int, int);
 int	ismtpt(char*);
 int acme_menuhit(int, Mousectl*, Menu*, int*);
 int acme_prompt(Keyboardctl*, Rune**, ulong, Point, uint);
+void ctrln(Text *);

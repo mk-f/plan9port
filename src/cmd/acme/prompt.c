@@ -55,6 +55,7 @@ prinit(Keyboardctl *kbc, ulong nbuf)
 	p->frame = nil;
 	p->backup = nil;
 	p->end = 0;
+	p->hl = 0;
 	p->tick = 0;
 	return p;
 }
@@ -97,7 +98,8 @@ praddrune(Prompt *p, Rune r)
 	if(p->tick < p->end)
 		memmove(p->buf+p->tick+1,p->buf+p->tick,(p->end-p->tick)*sizeof(*(p->buf)));
 	p->buf[p->tick] = r;
-	frinsert(p->frame, p->buf+p->tick, p->buf+p->tick+1, p->tick);
+	if(p->frame)
+		frinsert(p->frame, p->buf+p->tick, p->buf+p->tick+1, p->tick);
 
 	p->end++;
 	p->tick++;
@@ -133,7 +135,12 @@ prdraw(Prompt *p, Image *scr, Point pos, ulong width)
 
 	ret = 1;
 	l = 1;
-	p->hl = p->end;
+
+	// set hl = -1 from outside to suppress
+	if(p->hl<0)
+		p->hl = 0;
+	else
+		p->hl = p->end;
 
 	if(cols[BACK] == nil)
 		menucolors();
