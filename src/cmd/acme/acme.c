@@ -488,28 +488,48 @@ keyboardthread(void *v)
 			break;
 		case KKey:
 		casekeyboard:
-			if(r == 0x10){ /* ^P */
+			if(r == 0x0f || r == 0x10 || r == 0x0e){ /* ^/, ^P, ^N */
 				if(bartflag)
 					t = barttext;
 				else
 					t = rowwhich(&row, mouse->xy);
 				if(!t || !t->w)
 					break;
-				if(t->w->pr == nil)
-					t->w->pr = prinit(keyboardctl, 255);
 				qlock(&row.lk);
 				winlock(t->w, 'K');
-				if(prdraw(t->w->pr, screen,
-					 addpt(t->w->body.fr.r.min, Pt(Dx(t->w->body.fr.r)/4, Dy(t->w->body.fr.r)/2)),
-					 Dx(t->w->body.fr.r)/2)){
-					if(t->w->pr->buf[0] == ':'){
-						cmd = runesmprint("Edit %S", t->w->pr->buf + 1);
+				textcommit(t, TRUE);
+
+				if(r == 0x0e){
+					ctrln(t);
+				}
+				if(r == 0x0f){
+					if(t->w->prs == nil){
+						t->w->prs = prinit(keyboardctl, 255);
+					}
+					if(prdraw(t->w->prs, screen,
+						 addpt(t->w->body.fr.r.min, Pt(Dx(t->w->body.fr.r)/4, Dy(t->w->body.fr.r)/2)),
+						 Dx(t->w->body.fr.r)/2)){
+						cmd = runesmprint("Edit /%S", t->w->prs->buf);
 						run_cmd(cmd, t, nil);
 						free(cmd);
-					}else{
-						run_cmd(t->w->pr->buf, t, nil);
 					}
 				}
+				if(r == 0x10){ // ^P
+					if(t->w->pr == nil)
+						t->w->pr = prinit(keyboardctl, 255);
+					if(prdraw(t->w->pr, screen,
+						 addpt(t->w->body.fr.r.min, Pt(Dx(t->w->body.fr.r)/4, Dy(t->w->body.fr.r)/2)),
+						 Dx(t->w->body.fr.r)/2)){
+						if(t->w->pr->buf[0] == ':'){
+							cmd = runesmprint("Edit %S", t->w->pr->buf + 1);
+							run_cmd(cmd, t, nil);
+							free(cmd);
+						}else{
+							run_cmd(t->w->pr->buf, t, nil);
+						}
+					}
+				}
+
 				winunlock(t->w);
 				qunlock(&row.lk);
 				flushimage(display, 1);

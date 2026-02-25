@@ -30,6 +30,7 @@ wininit(Window *w, Window *clone, Rectangle r)
 	w->id = ++winid;
 	mminit(w);
 	w->pr = nil;
+	w->prs = nil;
 	incref(&w->ref);
 	if(globalincref)
 		incref(&w->ref);
@@ -335,6 +336,8 @@ winclose(Window *w)
 		free(w->events);
 		if(w->pr)
 			prfree(w->pr);
+		if(w->prs)
+			prfree(w->prs);
 		mmuserfree(w);
 		free(w);
 	}

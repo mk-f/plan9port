@@ -99,7 +99,7 @@ struct Prompt {
 	ulong nbuf;
 	ulong end;
 	ulong tick;
-	ushort hl;
+	short hl;
 };
 Prompt *prinit(Keyboardctl *, ulong);
 void prfree(Prompt *);
@@ -318,6 +318,7 @@ struct Window
 	Rune		**incl;
 	Reffont	*reffont;
 	Prompt *pr;
+	Prompt *prs;
 	QLock	ctllock;
 	uint		ctlfid;
 	char		*dumpstr;

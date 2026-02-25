@@ -22,6 +22,125 @@ static Rune Ldot[] = { '.', 0 };
 enum{
 	TABDIR = 3	/* width of tabs in directory windows */
 };
+static int
+longestprefix(Rune *a, Rune *b, int n)
+{
+	int i;
+
+	for(i=0; i<n; i++){
+		if(a[i] != b[i])
+			break;
+	}
+	return i;
+}
+static
+int
+ctrlncmp(const void *a, const void *b)
+{
+	Rangeset *ra, *rb;
+
+	ra = (Rangeset*)a;
+	rb = (Rangeset*)b;
+
+	return (ra->r[0].q1 - ra->r[0].q0) - (rb->r[0].q1 - rb->r[0].q0);
+}
+
+static
+Rune *
+ctrlnread(Text *t, int q0, int n)
+{
+	Rune *r = runemalloc(n+1);
+	bufread(&t->file->b, q0, r, n);
+	return r;
+}
+
+void
+ctrln(Text *t)
+{
+	uint q0, ct0, rn, minlen, origlen;
+	int c, i, j, n, m;
+
+	char buf[128];
+	int bufi = sizeof(buf)-1;
+	buf[bufi] = 0;
+	Rune *regex;
+	Rune *rbuf, **comp;
+	Rangeset r, *rp;
+
+	m=0;
+	q0=t->q0;
+	while(q0>0 && (c=textreadc(t, q0-1)) && ((c>='0' && c<='9') || (c>='A' && c<='z') || c=='_')){
+		if(--bufi == -1)
+			break;
+		buf[bufi] = c;
+		q0--;
+	}
+	origlen = strlen(&buf[bufi]);
+	if(bufi == -1)
+		fprint(2, "regex buffer overflow\n");
+	else if(q0 == t->q0)
+		fprint(2, "start of word not found\n");
+	else{
+		regex = runesmprint("%s[a-zA-Z0-9_]+", &buf[bufi]);
+		if(rxcompile(regex) == FALSE)
+			fprint(2, "bad regexp in ^N");
+		else{
+			rn = 0;
+			rp = nil;
+			for(ct0=0; ct0<t->file->b.nc && rxexecute(t, nil, ct0, t->file->b.nc, &r); ){
+				ct0 = r.r[0].q1;
+				rn++;
+				rp = erealloc(rp, rn*sizeof(Rangeset));
+				rp[rn-1] = r;
+			}
+			if(rn > 1){
+				qsort(rp, rn, sizeof(Rangeset),ctrlncmp);
+				comp = emalloc(sizeof(*comp)*rn);
+				comp[0] = ctrlnread(t, rp[0].r[0].q0, rp[0].r[0].q1 - rp[0].r[0].q0);
+
+				for(i=1,j=1; i<rn; i++){
+					comp[j] = ctrlnread(t, rp[i].r[0].q0, rp[i].r[0].q1 - rp[i].r[0].q0);
+					if(runestrcmp(comp[j], comp[j-1]) == 0)
+						free(comp[j]);
+					else
+						j++;
+				}
+				// comp[] is now sorted from short to long with no dups
+				minlen = runestrlen(comp[0]);
+				for(i=1;i<j;i++)
+					minlen = longestprefix(comp[0], comp[i], minlen);
+				if(minlen>origlen){
+					textinsert(t, t->q0, comp[0]+origlen, minlen-origlen, TRUE);
+					textsetselect(t, t->q0 + minlen-origlen, t->q1 + minlen-origlen);
+					//t->q0 += minlen-origlen;
+					//t->q1 = t->q0;
+					textcommit(t, TRUE);
+					m = 1;
+				}
+
+				for(i=0;i<j;i++){
+					if(!m)
+						warning(nil, "%S\n", comp[i]);
+					free(comp[i]);
+				}
+				free(comp);
+			}
+			if(rn == 1){
+				n = rp[0].r[0].q1 - rp[0].r[0].q0;
+				rbuf = runemalloc(n);
+				i = strlen(&buf[bufi]);
+				bufread(&t->file->b, rp[0].r[0].q0, rbuf, n);
+				textinsert(t, t->q0, rbuf+i, n-i, TRUE);
+				t->q0 += n-i;
+				textcommit(t, TRUE);
+				free(rbuf);
+			}
+			free(rp);
+		}
+		free(regex);
+
+	}
+}
 
 void
 textinit(Text *t, File *f, Rectangle r, Reffont *rf, Image *cols[NCOL])
