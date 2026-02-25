@@ -2,6 +2,7 @@
 <|sh ../devdraw/mkwsysrules.sh	# for X11
 
 RIOFILES=\
+	$SYSNAME.$O\
 	client.$O\
 	color.$O\
 	cursor.$O\
@@ -12,7 +13,6 @@ RIOFILES=\
 	main.$O\
 	manage.$O\
 	menu.$O\
-	proc.$O\
 
 CFLAGS=$CFLAGS -DDEBUG
 HFILES=dat.h fns.h
@@ -24,7 +24,8 @@ TARG=rio winwatch xshove
 # Bug in mk? "$L64 -lXext" gobbles the space, so
 # add trailing slash.
 L64=`[ -d $X11/lib64 ] && echo 64; echo`
-LDFLAGS=-L$X11/lib$L64/ -lXext -lX11 -lkvm
+KVM=`{if uname | grep 'OpenBSD' >/dev/null; then echo -lkvm; fi}
+LDFLAGS=-L$X11/lib$L64/ -lXext -lX11 $KVM
 
 <|sh mkriorules.sh
 
@@ -42,5 +43,10 @@ error.$O: showevent/ShowEvent.c
 $O.xshove: xshove.$O
 	$LD -o $O.xshove xshove.$O -lX11
 
-$O.horror: horror.$O
-	$LD -o $O.horror horror.$O -lX11
+AIX.$O: nosys.c
+Darwin.$O: nosys.c
+DragonFly.$O: nosys.c
+FreeBSD.$O: nosys.c
+Linux.$O: nosys.c
+NetBSD.$O: nosys.c
+SunOS.$O: nosys.c
