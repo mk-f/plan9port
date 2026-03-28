@@ -488,7 +488,7 @@ keyboardthread(void *v)
 			break;
 		case KKey:
 		casekeyboard:
-			if(r == 0x0f || r == 0x10 || r == 0x0e){ /* ^/, ^P, ^N */
+			if(r == 0x0f || r == 0x10 || r == 0x0e || r == 0x07){ /* ^/, ^P, ^N, ^' */
 				if(bartflag)
 					t = barttext;
 				else
@@ -529,6 +529,9 @@ keyboardthread(void *v)
 						}
 					}
 				}
+				if(r == 0x07) // ^'
+					execute(t, t->q0, t->q1, FALSE, nil);
+
 
 				winunlock(t->w);
 				qunlock(&row.lk);
