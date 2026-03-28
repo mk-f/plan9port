@@ -246,7 +246,7 @@ unmap(XUnmapEvent *e)
 			}
 			break;
 		case NormalState:
-			if(c == current)
+			if(c == current && !c->embedder)
 				nofocus();
 			if(!c->reparenting)
 				withdraw(c);
@@ -304,6 +304,8 @@ destroy(Window w)
 		XMapWindow(dpy, c->window);
 
 		c->embedder = 0;
+		if(current == c)
+			XSetInputFocus(dpy, c->window, RevertToPointerRoot, timestamp());
 		return;
 	}
 

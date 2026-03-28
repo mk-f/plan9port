@@ -145,13 +145,14 @@ manage(Client *c, int mapped)
 					oc->dx+2*BORDER, oc->dy+2*BORDER);
 		XMoveResizeWindow(dpy, oc->window, BORDER, BORDER, oc->dx, oc->dy);
 
-		ScreenInfo *screen = oc->screen;
 		XMapWindow(dpy, oc->window);
 		XUnmapWindow(dpy, oc->embedder);
+
 		rmclient(c);
 
-		if(current && current->screen == screen)
-			cmapfocus(current);
+		setactive(oc, 1);
+		setstate(oc, NormalState);
+
 		XSync(dpy, True);
 
 		return 1;
