@@ -168,7 +168,7 @@ manage(Client *c, int mapped)
 			CWBackPixel | CWBorderPixel | CWColormap,
 			&attrs);
 
-	XSelectInput(dpy, c->parent, SubstructureRedirectMask | SubstructureNotifyMask|ButtonPressMask| PointerMotionMask|LeaveWindowMask|KeyPressMask);
+	XSelectInput(dpy, c->parent, SubstructureRedirectMask | SubstructureNotifyMask|ButtonPressMask| PointerMotionMask|LeaveWindowMask|KeyPressMask|VisibilityChangeMask);
 	if(mapped)
 		c->reparenting = 1;
 	if(doreshape && !fixsize)

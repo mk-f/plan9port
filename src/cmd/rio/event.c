@@ -97,6 +97,9 @@ mainloop(int shape_event)
 		case MotionNotify:
 			motionnotify(&ev.xmotion);
 			break;
+		case VisibilityNotify:
+			visibilitynotify(&ev.xvisibility);
+			break;
 		case Expose:
 		case NoExpose:
 		case FocusOut:
@@ -621,5 +624,15 @@ motionnotify(XMotionEvent *e)
 			XUndefineCursor(dpy, c->parent);
 		else
 			XDefineCursor(dpy, c->parent, c->screen->bordcurs[bl]);
+	}
+}
+void
+visibilitynotify(XVisibilityEvent *e)
+{
+	Client *c;
+
+	c = getclient(e->window, 0);
+	if(c){
+		print("got %x\n", c);
 	}
 }

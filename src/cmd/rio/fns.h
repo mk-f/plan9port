@@ -41,6 +41,7 @@ void	leave(XCrossingEvent*);
 void	focusin(XFocusChangeEvent*);
 void	reparent(XReparentEvent*);
 void 	motionnotify(XMotionEvent*);
+void 	visibilitynotify(XVisibilityEvent*);
 BorderOrient borderorient(Client*, int, int);
 
 /* manage.c */
