@@ -1840,10 +1840,9 @@ run_cmd(Rune *r, Text *t, Text *argt) {
 	e = lookup(r, rl);
 
 	if(e){
-		if(e->mark && seltext!=nil)
-		if(seltext->what == Body){
+		if(e->mark && t!=nil && t->w!=nil){
 			seq++;
-			filemark(seltext->w->body.file);
+			filemark(t->w->body.file);
 		}
 		s = skipbl(r, rl, &n);
 		s = findbl(s, n, &n);
