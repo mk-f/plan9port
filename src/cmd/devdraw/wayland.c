@@ -1118,18 +1118,25 @@ static void rpc_flush(Client *c, Rectangle r) {
 	qunlock(&wayland_lock);
 }
 
+void
+rpc_setpid(Client *client, int pid)
+{
+	// unimplemented
+}
+
 static ClientImpl wayland_impl = {
 	rpc_resizeimg,
 	rpc_resizewindow,
 	rpc_setcursor,
 	rpc_setlabel,
+	rpc_setpid,
 	rpc_setmouse,
 	rpc_topwin,
 	rpc_bouncemouse,
 	rpc_flush
 };
 
-Memimage *rpc_attach(Client *c, char *label, char *winsize) {
+Memimage *rpc_attach(Client *c, char *label, char *winsize, int pid) {
 	DEBUG("rpc_attach(%s)\n", label);
 
 	qlock(&wayland_lock);
